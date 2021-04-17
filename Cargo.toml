@@ -1,0 +1,23 @@
+[package]
+name = "rerobots"
+version = "0.11.0-devel"
+authors = ["Scott C. Livingston <scott@rerobots.net>"]
+edition = "2018"
+
+[dependencies]
+log = "0.4"
+env_logger = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+openssl = { version = "0.10" }
+actix = "0.10"
+awc = { version = "2", features = ["openssl"] }
+
+[dependencies.clap]
+version = "2.33.0"
+default-features = false
+features = [ "color" ]
+
+[dev-dependencies]
+assert_cmd = "1.0"
+tempfile = "3.1"
