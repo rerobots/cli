@@ -60,6 +60,19 @@ fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
 }
 
 
+fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let payload = match client::api_instances(api_token) {
+        Ok(p) => p,
+        Err(err) => return CliError::new_std(err, 1)
+    };
+    for inst in payload["workspace_instances"].as_array().unwrap().iter() {
+        let inst = inst.as_str().unwrap();
+        println!("{}", inst);
+    }
+    Ok(())
+}
+
+
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client")
         .subcommand(SubCommand::with_name("version")
@@ -79,7 +92,9 @@ pub fn main() -> Result<(), CliError> {
         .subcommand(SubCommand::with_name("search")
                     .about("Search for matching deployments. empty query implies show all existing workspace deployments")
                     .arg(Arg::with_name("query")
-                         .value_name("QUERY")));
+                         .value_name("QUERY")))
+        .subcommand(SubCommand::with_name("list")
+                    .about("List all instances by this user"));
 
     let matches = app.get_matches();
 
@@ -109,6 +124,8 @@ pub fn main() -> Result<(), CliError> {
         println!(crate_version!());
     } else if let Some(matches) = matches.subcommand_matches("search") {
         return search_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("list") {
+        return list_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `hardshare -h`");
     }

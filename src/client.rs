@@ -33,11 +33,15 @@ impl ClientError {
 }
 
 
-pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let origin = match option_env!("REROBOTS_ORIGIN") {
+fn get_origin() -> &'static str {
+    match option_env!("REROBOTS_ORIGIN") {
         Some(u) => u,
         None => "https://api.rerobots.net"
-    };
+    }
+}
+
+
+fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
         Some(tok) => Some(format!("Bearer {}", tok)),
         None => match std::env::var_os("REROBOTS_API_TOKEN") {
@@ -45,6 +49,18 @@ pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<
             None => None
         }
     };
+
+    let connector = SslConnector::builder(SslMethod::tls())?.build();
+    let client = awc::Client::builder()
+        .connector(awc::Connector::new().ssl(connector).finish());
+    Ok(match authheader {
+        Some(hv) => client.header("Authorization", hv),
+        None => client
+    }.finish())
+}
+
+
+pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let mut path = "/deployments?info=t".to_string();
     if let Some(q) = query {
         path.push_str(format!("&q={}", q).as_str());
@@ -53,21 +69,36 @@ pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<
         path.push_str(format!("&types={}", t.join(",")).as_str());
     }
 
-    let url = format!("{}{}", origin, path);
-    let connector = SslConnector::builder(SslMethod::tls())?.build();
+    let url = format!("{}{}", get_origin(), path);
 
     let mut sys = System::new("wclient");
     actix::SystemRunner::block_on(&mut sys, async move {
-        let client = awc::Client::builder()
-            .connector(awc::Connector::new().ssl(connector).finish());
-        let client = match authheader {
-            Some(hv) => client.header("Authorization", hv),
-            None => client
-        }.finish();
+        let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
             debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
+            Ok(payload)
+        } else if resp.status() == 400 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+        } else {
+            ClientError::newbox(format!("server indicated error: {}", resp.status()))
+        }
+    })
+}
+
+
+pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let url = format!("{}/instances", get_origin());
+
+    let mut sys = System::new("wclient");
+    actix::SystemRunner::block_on(&mut sys, async move {
+        let client = create_client(token)?;
+        let mut resp = client.get(url).send().await?;
+        if resp.status() == 200 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            debug!("resp to GET /instances: {}", serde_json::to_string(&payload)?);
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
