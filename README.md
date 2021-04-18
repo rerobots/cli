@@ -1,6 +1,33 @@
 rerobots CLI
 ============
 
+Summary
+-------
+
+command-line interface (CLI) for [rerobots](https://rerobots.net/)
+
+
+Getting Started
+---------------
+
+Most interesting interactions with rerobots require an API token, which can be
+provided through the environment variable ``REROBOTS_API_TOKEN`` or via the
+command-line switch ``-t``. Get API tokens at https://rerobots.net/tokens
+
+
+Building and Testing
+--------------------
+
+This tool is implemented in [Rust](https://www.rust-lang.org/). To build,
+clone the repository at https://github.com/rerobots/cli.git and
+
+    cargo build
+
+To perform tests,
+
+    cargo test
+
+
 Participating
 -------------
 
@@ -10,7 +37,7 @@ CODE_OF_CONDUCT.md in the same directory as this README.
 ### Reporting errors, requesting features
 
 Please first check for prior reports that are similar or related in the issue
-tracker at https://github.com/cli/hardshare/issues
+tracker at https://github.com/rerobots/cli/issues
 
 Reports of security flaws are given the highest priority and should be sent to
 <security@rerobots.net>, optionally encrypted with the public key available at
