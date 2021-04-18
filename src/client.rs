@@ -33,7 +33,7 @@ impl ClientError {
 }
 
 
-pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<&str>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let origin = match option_env!("REROBOTS_ORIGIN") {
         Some(u) => u,
         None => "https://api.rerobots.net"
