@@ -47,7 +47,12 @@ impl CliError {
 
 fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let query = matches.value_of("query");
-    let payload = match client::api_search(query, Some(&vec!["!user_provided"]), api_token) {
+    let type_constraint = if matches.is_present("with_user_provided") {
+        None
+    } else {
+        Some(vec!["!user_provided"])
+    };
+    let payload = match client::api_search(query, type_constraint.as_ref(), api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
@@ -92,7 +97,10 @@ pub fn main() -> Result<(), CliError> {
         .subcommand(SubCommand::with_name("search")
                     .about("Search for matching deployments. empty query implies show all existing workspace deployments")
                     .arg(Arg::with_name("query")
-                         .value_name("QUERY")))
+                         .value_name("QUERY"))
+                    .arg(Arg::with_name("with_user_provided")
+                         .long("include-user-provided")
+                         .help("include user_provided workspace deployments in search")))
         .subcommand(SubCommand::with_name("list")
                     .about("List all instances by this user"));
 
