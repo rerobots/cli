@@ -89,6 +89,15 @@ fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
 }
 
 
+fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let instance_id = matches.value_of("instance_id");
+    match client::api_terminate_instance(instance_id, api_token) {
+        Ok(()) => Ok(()),
+        Err(err) => return CliError::new_std(err, 1)
+    }
+}
+
+
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client")
         .subcommand(SubCommand::with_name("version")
@@ -116,6 +125,10 @@ pub fn main() -> Result<(), CliError> {
                     .about("List all instances by this user"))
         .subcommand(SubCommand::with_name("info")
                     .about("Print summary about instance")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID")))
+        .subcommand(SubCommand::with_name("terminate")
+                    .about("Terminate instance")
                     .arg(Arg::with_name("instance_id")
                          .value_name("ID")));
 
@@ -151,6 +164,8 @@ pub fn main() -> Result<(), CliError> {
         return list_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("info") {
         return info_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("terminate") {
+        return terminate_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `hardshare -h`");
     }
