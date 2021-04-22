@@ -93,13 +93,51 @@ pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn
     let url = format!("{}/instances", get_origin());
 
     let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    actix::SystemRunner::block_on(&mut sys, async {
         let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
             debug!("resp to GET /instances: {}", serde_json::to_string(&payload)?);
             Ok(payload)
+        } else if resp.status() == 400 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+        } else {
+            ClientError::newbox(format!("server indicated error: {}", resp.status()))
+        }
+    })
+}
+
+
+pub fn api_instance_info(instance_id: Option<&str>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let instance_id = match instance_id {
+        Some(inid) => inid.to_string(),
+        None => {
+            let payload = api_instances(token.clone())?;
+            let instances = payload["workspace_instances"].as_array().unwrap();
+            if instances.len() == 0 {
+                return ClientError::newbox("no active instances")
+            } else if instances.len() > 1 {
+                return ClientError::newbox("ambiguous command because more than one active instance")
+            } else {
+                instances[0].as_str().unwrap().to_string()
+            }
+        }
+    };
+    let path = format!("/instance/{}", instance_id);
+    let url = format!("{}{}", get_origin(), path);
+
+    let mut sys = System::new("wclient");
+    actix::SystemRunner::block_on(&mut sys, async move {
+        let client = create_client(token)?;
+        let mut resp = client.get(url).send().await?;
+        if resp.status() == 200 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
+            Ok(payload)
+        } else if resp.status() == 404 {
+            ClientError::newbox("instance not found")
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
             ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))

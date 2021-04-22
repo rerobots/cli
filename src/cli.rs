@@ -78,6 +78,17 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
 }
 
 
+fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let instance_id = matches.value_of("instance_id");
+    let payload = match client::api_instance_info(instance_id, api_token) {
+        Ok(p) => p,
+        Err(err) => return CliError::new_std(err, 1)
+    };
+    println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    Ok(())
+}
+
+
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client")
         .subcommand(SubCommand::with_name("version")
@@ -102,7 +113,11 @@ pub fn main() -> Result<(), CliError> {
                          .long("include-user-provided")
                          .help("include user_provided workspace deployments in search")))
         .subcommand(SubCommand::with_name("list")
-                    .about("List all instances by this user"));
+                    .about("List all instances by this user"))
+        .subcommand(SubCommand::with_name("info")
+                    .about("Print summary about instance")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID")));
 
     let matches = app.get_matches();
 
@@ -134,6 +149,8 @@ pub fn main() -> Result<(), CliError> {
         return search_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("list") {
         return list_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("info") {
+        return info_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `hardshare -h`");
     }
