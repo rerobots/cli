@@ -1,6 +1,8 @@
 // SCL <scott@rerobots.net>
 // Copyright (C) 2021 rerobots, Inc.
 
+use std::collections::HashMap;
+
 use actix::prelude::*;
 
 use openssl::ssl::{SslMethod, SslConnector};
@@ -171,6 +173,37 @@ pub fn api_terminate_instance(instance_id: Option<&str>, token: Option<String>) 
             Ok(())
         } else if resp.status() == 404 {
             ClientError::newbox("instance not found")
+        } else if resp.status() == 400 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+        } else {
+            ClientError::newbox(format!("server indicated error: {}", resp.status()))
+        }
+    })
+}
+
+
+pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_key: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let path = format!("/new/{}", wdid_or_wtype);
+    let url = format!("{}{}", get_origin(), path);
+
+    let mut body = HashMap::new();
+    if let Some(pk) = public_key {
+        body.insert("sshkey", pk);
+    }
+
+    let mut sys = System::new("wclient");
+    actix::SystemRunner::block_on(&mut sys, async move {
+        let client = create_client(token)?;
+        let mut resp = if body.len() > 0 {
+            client.post(url).send_json(&body).await?
+        } else {
+            client.post(url).send().await?
+        };
+        if resp.status() == 200 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            debug!("resp to POST {}: {}", path, serde_json::to_string(&payload)?);
+            Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
             ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
