@@ -48,6 +48,10 @@ impl CliError {
     fn new_stdio(err: std::io::Error, exitcode: i32) -> Result<(), CliError> {
         Err(CliError { msg: Some(format!("{}", err)), exitcode: exitcode })
     }
+
+    fn newrc(exitcode: i32) -> Result<(), CliError> {
+        Err(CliError { msg: None, exitcode: exitcode })
+    }
 }
 
 
@@ -100,6 +104,25 @@ fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -
     match client::api_terminate_instance(instance_id, api_token) {
         Ok(()) => Ok(()),
         Err(err) => return CliError::new_std(err, 1)
+    }
+}
+
+
+fn isready_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let blocking = matches.is_present("blocking");
+    let instance_id = matches.value_of("instance_id");
+    loop {
+        let payload = match client::api_instance_info(instance_id, api_token.clone()) {
+            Ok(p) => p,
+            Err(err) => return CliError::new_std(err, 1)
+        };
+        let status = payload["status"].as_str().unwrap();
+        if status == "READY" {
+            return Ok(())
+        } else if status != "INIT" || !blocking {
+            return CliError::newrc(1)
+        }
+        std::thread::sleep(std::time::Duration::new(1, 0));
     }
 }
 
@@ -220,7 +243,14 @@ pub fn main() -> Result<(), CliError> {
         .subcommand(SubCommand::with_name("terminate")
                     .about("Terminate instance")
                     .arg(Arg::with_name("instance_id")
-                         .value_name("ID")));
+                         .value_name("ID")))
+        .subcommand(SubCommand::with_name("isready")
+                    .about("Indicate whether instance is ready with exit code")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID"))
+                    .arg(Arg::with_name("blocking")
+                         .long("blocking")
+                         .help("Do not return until instance is non-INIT")));
 
     let matches = app.get_matches();
 
@@ -258,6 +288,8 @@ pub fn main() -> Result<(), CliError> {
         return launch_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("terminate") {
         return terminate_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("isready") {
+        return isready_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `hardshare -h`");
     }
