@@ -110,9 +110,9 @@ fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -
 
 fn isready_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let blocking = matches.is_present("blocking");
-    let instance_id = matches.value_of("instance_id");
+    let mut instance_id = matches.value_of("instance_id").map(|s| s.to_string());
     loop {
-        let payload = match client::api_instance_info(instance_id, api_token.clone()) {
+        let payload = match client::api_instance_info(instance_id.clone(), api_token.clone()) {
             Ok(p) => p,
             Err(err) => return CliError::new_std(err, 1)
         };
@@ -121,6 +121,9 @@ fn isready_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> 
             return Ok(())
         } else if status != "INIT" || !blocking {
             return CliError::newrc(1)
+        }
+        if instance_id.is_none() {
+            instance_id = Some(payload["id"].as_str().unwrap().to_string());
         }
         std::thread::sleep(std::time::Duration::new(1, 0));
     }

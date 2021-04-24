@@ -112,7 +112,7 @@ pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn
 }
 
 
-fn select_instance(instance_id: Option<&str>, token: &Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+fn select_instance<S: ToString>(instance_id: Option<S>, token: &Option<String>) -> Result<String, Box<dyn std::error::Error>> {
     let token = match token {
         Some(s) => Some(s.clone()),
         None => None
@@ -134,7 +134,7 @@ fn select_instance(instance_id: Option<&str>, token: &Option<String>) -> Result<
 }
 
 
-pub fn api_instance_info(instance_id: Option<&str>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_instance_info<S: ToString>(instance_id: Option<S>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
     let path = format!("/instance/{}", instance_id);
     let url = format!("{}{}", get_origin(), path);
