@@ -159,6 +159,51 @@ pub fn api_instance_info<S: ToString>(instance_id: Option<S>, token: Option<Stri
 }
 
 
+pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let path = format!("/deployment/{}", wdeployment_id);
+    let url = format!("{}{}", get_origin(), path);
+
+    let mut sys = System::new("wclient");
+    actix::SystemRunner::block_on(&mut sys, async move {
+        let client = create_client(token)?;
+        let req = client.get(url);
+        let has_api_token = req.headers().contains_key("Authorization");
+        let mut resp = req.send().await?;
+        if resp.status() == 200 {
+
+            let mut payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
+
+            if has_api_token {
+                let path = format!("{}/rules", path);
+                let url = format!("{}{}", get_origin(), path);
+                let mut resp = client.get(url).send().await?;
+                if resp.status() == 200 {
+                    let rules_payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+                    debug!("resp to GET {}: {}", path, serde_json::to_string(&rules_payload)?);
+                    payload.as_object_mut().unwrap().insert("cap".to_string(), rules_payload);
+                } else if resp.status() == 400 {
+                    let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+                    return ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()));
+                } else {
+                    return ClientError::newbox(format!("server indicated error: {}", resp.status()));
+                }
+            }
+
+            Ok(payload)
+
+        } else if resp.status() == 404 {
+            ClientError::newbox("workspace deployment not found")
+        } else if resp.status() == 400 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+        } else {
+            ClientError::newbox(format!("server indicated error: {}", resp.status()))
+        }
+    })
+}
+
+
 pub fn api_terminate_instance(instance_id: Option<&str>, token: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
     let path = format!("/terminate/{}", instance_id);

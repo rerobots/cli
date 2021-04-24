@@ -99,6 +99,17 @@ fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
 }
 
 
+fn wdinfo_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let wdeployment_id = matches.value_of("wdeployment_id").unwrap();
+    let payload = match client::api_wdeployment_info(wdeployment_id, api_token) {
+        Ok(p) => p,
+        Err(err) => return CliError::new_std(err, 1)
+    };
+    println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    Ok(())
+}
+
+
 fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
     match client::api_terminate_instance(instance_id, api_token) {
@@ -229,6 +240,11 @@ pub fn main() -> Result<(), CliError> {
                     .about("Print summary about instance")
                     .arg(Arg::with_name("instance_id")
                          .value_name("ID")))
+        .subcommand(SubCommand::with_name("wdinfo")
+                    .about("Print summary about workspace deployment")
+                    .arg(Arg::with_name("wdeployment_id")
+                         .value_name("ID")
+                         .required(true)))
         .subcommand(SubCommand::with_name("launch")
                     .about("Launch instance from specified workspace deployment or type")
                     .arg(Arg::with_name("wdid_or_wtype")
@@ -287,6 +303,8 @@ pub fn main() -> Result<(), CliError> {
         return list_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("info") {
         return info_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("wdinfo") {
+        return wdinfo_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("launch") {
         return launch_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("terminate") {
