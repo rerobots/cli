@@ -27,6 +27,18 @@ To perform tests,
 
     cargo test
 
+Building the User's Guide requires [Sphinx](https://www.sphinx-doc.org/),
+which can be installed by
+
+    cd doc
+    pip install -r requirements.txt
+
+Now, in the doc/ directory,
+
+    make doc
+
+The result is in build/. Start at build/index.html
+
 
 Participating
 -------------
