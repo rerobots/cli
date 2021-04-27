@@ -212,7 +212,7 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
 
 
 pub fn main() -> Result<(), CliError> {
-    let app = clap::App::new("rerobots API command-line client")
+    let app = clap::App::new("rerobots API command-line client").max_term_width(80)
         .subcommand(SubCommand::with_name("version")
                     .about("Prints version number and exits"))
         .arg(Arg::with_name("version")
