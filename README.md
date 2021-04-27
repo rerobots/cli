@@ -35,9 +35,9 @@ which can be installed by
 
 Now, in the doc/ directory,
 
-    make doc
+    make
 
-The result is in build/. Start at build/index.html
+The result is in build/. Start reading at build/index.html
 
 
 Participating
