@@ -42,12 +42,12 @@ which will result in a message similar to the following
       version      Prints version number and exits
       wdinfo       Print summary about workspace deployment
 
-  Call ``help`` to learn more about commands, e.g., ``rerobots help info`` to
-  learn usage of ``rerobots info``.
+Call ``help`` to learn more about commands, e.g., ``rerobots help info`` to
+learn usage of ``rerobots info``.
 
-  To use an `API token <https://rerobots.net/tokens>`_, assign it to the
-  environment variable ``REROBOTS_API_TOKEN``, or give it through a file named in
-  the command-line switch ``-t``.
+To use an `API token <https://rerobots.net/tokens>`_, assign it to the
+environment variable ``REROBOTS_API_TOKEN``, or give it through a file named in
+the command-line switch ``-t``.
 
 
 .. _ssec:cli-example:
