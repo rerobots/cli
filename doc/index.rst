@@ -17,43 +17,37 @@ which will result in a message similar to the following
 
 ::
 
-  usage: rerobots [-h] [-V] [-t FILE]
-		  {info,isready,addon-cam,addon-mistyproxy,addon-drive,list,search,wdinfo,launch,terminate,version,help}
-		  ...
+  USAGE:
+      rerobots [FLAGS] [OPTIONS] [SUBCOMMAND]
 
-  rerobots API command-line client
+  FLAGS:
+      -h, --help       Prints help information
+      -v, --verbose    Increases verboseness level of logs; ignored if RUST_LOG is
+		       defined
+      -V, --version    Prints version number and exits
 
-  positional arguments:
-    {info,isready,addon-cam,addon-mistyproxy,addon-drive,list,search,wdinfo,launch,terminate,version,help}
-      info                print summary about instance.
-      isready             indicate whether instance is ready with exit code.
-      addon-cam           get image via add-on `cam`
-      addon-mistyproxy    get proxy URL via add-on `mistyproxy`
-      addon-drive         send motion commands via add-on `drive`
-      list                list all instances owned by this user.
-      search              search for matching deployments. empty query implies
-			  show all existing workspace deployments.
-      wdinfo              print summary about workspace deployment.
-      launch              launch instance from specified workspace deployment or
-			  type. if none is specified, then randomly select from
-			  those available.
-      terminate           terminate instance.
-      version             print version number and exit.
-      help                print this help message and exit
+  OPTIONS:
+      -t <FILE>        plaintext file containing API token; with this flag, the
+		       REROBOTS_API_TOKEN environment variable is ignored
 
-  optional arguments:
-    -h, --help            print this help message and exit
-    -V, --version         print version number and exit.
-    -t FILE, --jwt FILE   plaintext file containing API token; with this flag,
-			  the REROBOTS_API_TOKEN environment variable is
-			  ignored.
+  SUBCOMMANDS:
+      help         Prints this message or the help of the given subcommand(s)
+      info         Print summary about instance
+      isready      Indicate whether instance is ready with exit code
+      launch       Launch instance from specified workspace deployment or type
+      list         List all instances by this user
+      search       Search for matching deployments. empty query implies show
+		   all existing workspace deployments
+      terminate    Terminate instance
+      version      Prints version number and exits
+      wdinfo       Print summary about workspace deployment
 
-Call ``help`` to learn more about commands, e.g., ``rerobots help info`` to
-learn usage of ``rerobots info``.
+  Call ``help`` to learn more about commands, e.g., ``rerobots help info`` to
+  learn usage of ``rerobots info``.
 
-To use an `API token <https://rerobots.net/tokens>`_, assign it to the
-environment variable ``REROBOTS_API_TOKEN``, or give it through a file named in
-the command-line switch ``-t``.
+  To use an `API token <https://rerobots.net/tokens>`_, assign it to the
+  environment variable ``REROBOTS_API_TOKEN``, or give it through a file named in
+  the command-line switch ``-t``.
 
 
 .. _ssec:cli-example:
