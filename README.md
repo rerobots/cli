@@ -6,6 +6,9 @@ Summary
 
 command-line interface (CLI) for [rerobots](https://rerobots.net/)
 
+Documentation of the current release is at https://rerobots-cli.readthedocs.io/
+or can be built from sources as described below.
+
 
 Getting Started
 ---------------
