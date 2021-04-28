@@ -12,6 +12,14 @@ use clap::{Arg, SubCommand};
 use crate::client;
 
 
+#[derive(PartialEq)]
+enum DefaultConfirmAnswer {
+    YES,
+    NO,
+    NONE,
+}
+
+
 pub struct CliError {
     pub msg: Option<String>,
     pub exitcode: i32,
@@ -156,7 +164,7 @@ fn user_only_perm(fp: &mut File) -> Result<(), Box<dyn std::error::Error>> {
 
 
 fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut fp = OpenOptions::new().create_new(true).write(true).truncate(true).open(fname)?;
+    let mut fp = OpenOptions::new().create(true).write(true).truncate(true).open(fname)?;
     user_only_perm(&mut fp)?;
     fp.write_all(secret_key.as_bytes())?;
     fp.sync_all()?;
@@ -164,7 +172,19 @@ fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::er
 }
 
 
+fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnswer {
+    if matches.is_present("assume_no") {
+        DefaultConfirmAnswer::NO
+    } else if matches.is_present("assume_yes") {
+        DefaultConfirmAnswer::YES
+    } else {
+        DefaultConfirmAnswer::NONE
+    }
+}
+
+
 fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let default_confirm = decide_default_confirmation(matches);
     let wdid_or_wtype = matches.value_of("wdid_or_wtype").unwrap();
 
     let given_public_key = matches.is_present("public_key");
@@ -186,8 +206,30 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
             Some(path) => path,
             None => "key.pem"
         };
-        if std::path::Path::new(path).exists() {
-            return CliError::new(format!("Error: {} already exists", path), 1);
+        if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
+            if default_confirm == DefaultConfirmAnswer::NO {
+                return CliError::new(format!("Error: {} already exists", path), 1);
+            }
+            let prompt = format!("Overwrite existing file at {} with new secret key? [y/N]", path);
+            loop {
+                print!("{} ", prompt);
+                std::io::stdout().flush().unwrap();
+                let mut choice = String::new();
+                match std::io::stdin().read_line(&mut choice) {
+                    Ok(_) => {
+                        choice.make_ascii_lowercase();
+                        let choicel = choice.trim();
+                        if choicel == "n" || choicel == "no" || choicel.len() == 0 {
+                            return CliError::newrc(1);
+                        } else if choicel == "y" || choicel == "yes" {
+                            break;
+                        }
+                    },
+                    Err(err) => {
+                        return CliError::new_stdio(err, 1);
+                    }
+                }
+            }
         }
         Some(path)
     } else if matches.is_present("secret_key") {
@@ -251,6 +293,12 @@ pub fn main() -> Result<(), CliError> {
                          .value_name("ID")
                          .required(true)
                          .help("workspace type or deployment ID"))
+                    .arg(Arg::with_name("assume_yes")
+                         .short("y")
+                         .help("assume \"yes\" for any questions required to launch instance; otherwise, interactive prompts will appear to confirm actions as needed"))
+                    .arg(Arg::with_name("assume_no")
+                         .short("n")
+                         .help("assume \"no\" for any questions required to launch instance; in practice, this prevents launching if doing so requires destructive actions, e.g., overwriting a local file"))
                     .arg(Arg::with_name("public_key")
                          .long("public-key")
                          .value_name("FILE")
