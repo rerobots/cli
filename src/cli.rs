@@ -63,6 +63,14 @@ impl CliError {
 }
 
 
+#[derive(PartialEq, Debug)]
+enum PrintingFormat {
+    DEFAULT,
+    YAML,
+    JSON,
+}
+
+
 fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let query = matches.value_of("query");
     let type_constraint = if matches.is_present("with_user_provided") {
@@ -96,24 +104,32 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
 }
 
 
-fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pformat: PrintingFormat) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
     let payload = match client::api_instance_info(instance_id, api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
-    println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    if pformat == PrintingFormat::YAML {
+        println!("{}", serde_yaml::to_string(&payload).unwrap());
+    } else {  // pformat == PrintingFormat::JSON
+        println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    }
     Ok(())
 }
 
 
-fn wdinfo_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn wdinfo_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pformat: PrintingFormat) -> Result<(), CliError> {
     let wdeployment_id = matches.value_of("wdeployment_id").unwrap();
     let payload = match client::api_wdeployment_info(wdeployment_id, api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
-    println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    if pformat == PrintingFormat::YAML {
+        println!("{}", serde_yaml::to_string(&payload).unwrap());
+    } else {  // pformat == PrintingFormat::JSON
+        println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+    }
     Ok(())
 }
 
@@ -265,6 +281,10 @@ pub fn main() -> Result<(), CliError> {
              .short("v")
              .long("verbose")
              .help("Increases verboseness level of logs; ignored if RUST_LOG is defined"))
+        .arg(Arg::with_name("printformat")
+             .long("format")
+             .value_name("FORMAT")
+             .help("output formatting; options: YAML , JSON"))
         .arg(Arg::with_name("apitoken")
              .short("-t")
              .value_name("FILE")
@@ -328,6 +348,20 @@ pub fn main() -> Result<(), CliError> {
     };
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_loglevel)).init();
 
+    let pformat = match matches.value_of("printformat") {
+        Some(given_pformat) => {
+            let given_pformat_lower = given_pformat.to_lowercase();
+            if given_pformat_lower == "json" {
+                PrintingFormat::JSON
+            } else if given_pformat_lower == "yaml" {
+                PrintingFormat::YAML
+            } else {
+                return CliError::new(format!("unrecognized format: {}", given_pformat).as_str(), 1)
+            }
+        },
+        None => PrintingFormat::DEFAULT
+    };
+
     let api_token = match matches.value_of("apitoken") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
@@ -350,9 +384,9 @@ pub fn main() -> Result<(), CliError> {
     } else if let Some(matches) = matches.subcommand_matches("list") {
         return list_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("info") {
-        return info_subcommand(matches, api_token);
+        return info_subcommand(matches, api_token, pformat);
     } else if let Some(matches) = matches.subcommand_matches("wdinfo") {
-        return wdinfo_subcommand(matches, api_token);
+        return wdinfo_subcommand(matches, api_token, pformat);
     } else if let Some(matches) = matches.subcommand_matches("launch") {
         return launch_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("terminate") {

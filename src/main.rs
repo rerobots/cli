@@ -8,6 +8,7 @@ extern crate log;
 extern crate clap;
 
 extern crate serde_json;
+extern crate serde_yaml;
 
 mod cli;
 mod client;
