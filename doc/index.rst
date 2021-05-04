@@ -57,18 +57,16 @@ Example
 
 The following video demonstrates how to search for types of workspaces, request
 an instance, and finally terminate it. The same example is also presented below
-in text.
+in text. (This video can also be watched at https://asciinema.org/a/l0l2yh83JtAM8RjDiOHsk3Q9F)
+
+.. raw:: html
+
+  <script id="asciicast-l0l2yh83JtAM8RjDiOHsk3Q9F" src="https://asciinema.org/a/l0l2yh83JtAM8RjDiOHsk3Q9F.js" async></script>
 
 Before beginning, `get an API token
 <https://help.rerobots.net/webui.html#making-and-revoking-api-tokens>`_ (`from
 the Web UI <https://rerobots.net/tokens>`_). In this example, we assume that it
 is saved to a file named ``jwt.txt``.
-
-.. original video is hosted at https://asciinema.org/a/l0l2yh83JtAM8RjDiOHsk3Q9F
-
-.. raw:: html
-
-  <script id="asciicast-l0l2yh83JtAM8RjDiOHsk3Q9F" src="https://asciinema.org/a/l0l2yh83JtAM8RjDiOHsk3Q9F.js" async></script>
 
 .. highlight:: none
 
