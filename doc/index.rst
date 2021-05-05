@@ -63,12 +63,14 @@ in text. (This video can also be watched at https://asciinema.org/a/l0l2yh83JtAM
 
   <script id="asciicast-l0l2yh83JtAM8RjDiOHsk3Q9F" src="https://asciinema.org/a/l0l2yh83JtAM8RjDiOHsk3Q9F.js" async></script>
 
+.. highlight:: none
+
 Before beginning, `get an API token
 <https://help.rerobots.net/webui.html#making-and-revoking-api-tokens>`_ (`from
-the Web UI <https://rerobots.net/tokens>`_). In this example, we assume that it
-is saved to a file named ``jwt.txt``.
+the Web UI <https://rerobots.net/tokens>`_). Now assign it to an environment variable.
+For example, if the API token is saved to a local file named ``tok``, then ::
 
-.. highlight:: none
+  export REROBOTS_API_TOKEN=$(cat tok)
 
 Search for workspace deployments::
 
