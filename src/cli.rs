@@ -269,6 +269,39 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
 }
 
 
+fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let instance_id = matches.value_of("instance_id");
+    let payload = match client::api_instance_info(instance_id, api_token) {
+        Ok(p) => p,
+        Err(err) => return CliError::new_std(err, 1)
+    };
+    let status = payload["status"].as_str().unwrap();
+    if status != "READY" {
+        return CliError::new("Error: instance is not READY", 1);
+    }
+    let ipv4 = payload["fwd"].as_object().unwrap()["ipv4"].as_str().unwrap();
+    let port = payload["fwd"].as_object().unwrap()["port"].as_u64().unwrap();
+    let args: Vec<&str> = match matches.values_of("ssh_args") {
+        Some(v) => v.collect(),
+        None => vec![]
+    };
+    let status = match std::process::Command::new("ssh")
+        .arg("-p").arg(port.to_string())
+        .arg(ipv4)
+        .stdin(std::process::Stdio::inherit())
+        .stdout(std::process::Stdio::inherit())
+        .status() {
+            Ok(rc) => rc,
+            Err(err) => return CliError::new_stdio(err, 1)
+        };
+    if status.success() {
+        Ok(())
+    } else {
+        CliError::newrc(1)
+    }
+}
+
+
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client").max_term_width(80)
         .subcommand(SubCommand::with_name("version")
@@ -337,7 +370,14 @@ pub fn main() -> Result<(), CliError> {
                          .value_name("ID"))
                     .arg(Arg::with_name("blocking")
                          .long("blocking")
-                         .help("Do not return until instance is non-INIT")));
+                         .help("Do not return until instance is non-INIT")))
+        .subcommand(SubCommand::with_name("ssh")
+                    .about("Connect to instance host via ssh")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID"))
+                    .arg(Arg::with_name("ssh_args")
+                         .required(false)
+                         .last(true)));
 
     let matches = app.get_matches();
 
@@ -393,6 +433,8 @@ pub fn main() -> Result<(), CliError> {
         return terminate_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("isready") {
         return isready_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("ssh") {
+        return ssh_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `rerobots -h`");
     }
