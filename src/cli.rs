@@ -394,7 +394,7 @@ pub fn main() -> Result<(), CliError> {
     } else if let Some(matches) = matches.subcommand_matches("isready") {
         return isready_subcommand(matches, api_token);
     } else {
-        println!("No command given. Try `hardshare -h`");
+        println!("No command given. Try `rerobots -h`");
     }
 
     Ok(())
