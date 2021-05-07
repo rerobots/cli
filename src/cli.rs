@@ -270,6 +270,7 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
 
 
 fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let secret_key_path = "key.pem";
     let instance_id = matches.value_of("instance_id");
     let payload = match client::api_instance_info(instance_id, api_token) {
         Ok(p) => p,
@@ -279,15 +280,29 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
     if status != "READY" {
         return CliError::new("Error: instance is not READY", 1);
     }
+    let username = "root";
     let ipv4 = payload["fwd"].as_object().unwrap()["ipv4"].as_str().unwrap();
     let port = payload["fwd"].as_object().unwrap()["port"].as_u64().unwrap();
     let args: Vec<&str> = match matches.values_of("ssh_args") {
         Some(v) => v.collect(),
         None => vec![]
     };
-    let status = match std::process::Command::new("ssh")
+
+    let mut cmd = &mut std::process::Command::new("ssh");
+    let mut gave_secretkey = false;
+    for arg in args.iter() {
+        if arg == &"-i" {
+            gave_secretkey = true;
+        }
+        cmd = cmd.arg(arg);
+    }
+    if !gave_secretkey && std::path::Path::new(secret_key_path).exists() {
+        cmd = cmd.arg("-i").arg(secret_key_path);
+    }
+
+    let status = match cmd
         .arg("-p").arg(port.to_string())
-        .arg(ipv4)
+        .arg(format!("{}@{}", username, ipv4))
         .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .status() {
@@ -377,6 +392,7 @@ pub fn main() -> Result<(), CliError> {
                          .value_name("ID"))
                     .arg(Arg::with_name("ssh_args")
                          .required(false)
+                         .multiple(true)
                          .last(true)));
 
     let matches = app.get_matches();
