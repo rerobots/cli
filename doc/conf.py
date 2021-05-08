@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath('..'))
 project = 'rerobots CLI'
 copyright = '2021 rerobots, Inc'
 author = 'rerobots, Inc.'
+html_logo = '_static/logo.svg'
 
 version = ''
 release = ''
