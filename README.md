@@ -21,6 +21,10 @@ command-line switch ``-t``. Get API tokens at https://rerobots.net/tokens
 Building and Testing
 --------------------
 
+A [Git LFS](https://git-lfs.github.com/) client is required to clone this
+repository. Note that `git clone` will succeed without `git lfs` available, but
+some large files will not be fetched.
+
 This tool is implemented in [Rust](https://www.rust-lang.org/). To build,
 clone the repository at https://github.com/rerobots/cli.git and
 
