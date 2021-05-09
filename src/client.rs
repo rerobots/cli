@@ -229,6 +229,7 @@ pub fn api_terminate_instance(instance_id: Option<&str>, token: Option<String>) 
 
 
 pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_key: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let td = std::time::Duration::new(10, 0);
     let path = format!("/new/{}", wdid_or_wtype);
     let url = format!("{}{}", get_origin(), path);
 
@@ -239,11 +240,13 @@ pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_ke
 
     let mut sys = System::new("wclient");
     actix::SystemRunner::block_on(&mut sys, async move {
-        let client = create_client(token)?;
+        let client_req = create_client(token)?
+            .post(url)
+            .timeout(td);
         let mut resp = if body.len() > 0 {
-            client.post(url).send_json(&body).await?
+            client_req.send_json(&body).await?
         } else {
-            client.post(url).send().await?
+            client_req.send().await?
         };
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
