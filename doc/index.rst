@@ -27,8 +27,10 @@ which will result in a message similar to the following
       -V, --version    Prints version number and exits
 
   OPTIONS:
-      -t <FILE>        plaintext file containing API token; with this flag, the
-		       REROBOTS_API_TOKEN environment variable is ignored
+      -t <FILE>                plaintext file containing API token; with this
+			       flag, the REROBOTS_API_TOKEN environment variable
+			       is ignored
+	  --format <FORMAT>    output formatting; options: YAML , JSON
 
   SUBCOMMANDS:
       help         Prints this message or the help of the given subcommand(s)
@@ -38,6 +40,7 @@ which will result in a message similar to the following
       list         List all instances by this user
       search       Search for matching deployments. empty query implies show
 		   all existing workspace deployments
+      ssh          Connect to instance host via ssh
       terminate    Terminate instance
       version      Prints version number and exits
       wdinfo       Print summary about workspace deployment
