@@ -96,9 +96,11 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
-    for inst in payload["workspace_instances"].as_array().unwrap().iter() {
+    println!("instance\t\t\t\tworkspace deployment");
+    for (j, inst) in payload["workspace_instances"].as_array().unwrap().iter().enumerate() {
         let inst = inst.as_str().unwrap();
-        println!("{}", inst);
+        let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j].as_str().unwrap();
+        println!("{}\t{}", inst, wdeployment_id);
     }
     Ok(())
 }
