@@ -92,15 +92,22 @@ fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
 
 
 fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let be_quiet = matches.is_present("quiet");
     let payload = match client::api_instances(api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
-    println!("instance\t\t\t\tworkspace deployment");
+    if !be_quiet {
+        println!("instance\t\t\t\tworkspace deployment");
+    }
     for (j, inst) in payload["workspace_instances"].as_array().unwrap().iter().enumerate() {
         let inst = inst.as_str().unwrap();
-        let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j].as_str().unwrap();
-        println!("{}\t{}", inst, wdeployment_id);
+        if be_quiet {
+            println!("{}", inst);
+        } else {
+            let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j].as_str().unwrap();
+            println!("{}\t{}", inst, wdeployment_id);
+        }
     }
     Ok(())
 }
@@ -347,7 +354,11 @@ pub fn main() -> Result<(), CliError> {
                          .long("include-user-provided")
                          .help("include user_provided workspace deployments in search")))
         .subcommand(SubCommand::with_name("list")
-                    .about("List all instances by this user"))
+                    .about("List all instances by this user")
+                    .arg(Arg::with_name("quiet")
+                         .short("q")
+                         .long("quiet")
+                         .help("Only display instance IDs")))
         .subcommand(SubCommand::with_name("info")
                     .about("Print summary about instance")
                     .arg(Arg::with_name("instance_id")
