@@ -84,6 +84,9 @@ Get more information about one of them::
 
   $ rerobots wdinfo 2c0873b5-1da1-46e6-9658-c40379774edf
   {
+    "cap": {
+      "rules": []
+    },
     "id": "2c0873b5-1da1-46e6-9658-c40379774edf",
     "type": "fixed_misty2",
     "type_version": 1,
