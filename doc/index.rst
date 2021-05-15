@@ -129,7 +129,13 @@ This key should be used for ssh connections, e.g., with commands of the form
     "status": "READY"
   }
 
-Finally, terminate the instance::
+The section ``fwd`` contains an IP address and port at which ssh connections can
+be established to the instance host. The rerobots CLI provides a convenient
+command to do this::
+
+  $ rerobots ssh f7856ad4-a9d7-43f5-8420-7073d10bceec
+
+Finally, ``exit`` the ssh shell, and terminate the instance::
 
   $ rerobots terminate f7856ad4-a9d7-43f5-8420-7073d10bceec
 
