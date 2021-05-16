@@ -7,9 +7,22 @@ use std::io::prelude::*;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
+use chrono::{Utc, TimeZone};
+
 use clap::{Arg, SubCommand};
 
+use openssl::hash::MessageDigest;
+use openssl::pkey::PKey;
+
+use jwt::{Token, Header, Claims};
+use jwt::VerifyWithKey;
+use jwt::algorithm::openssl::PKeyWithDigest;
+
 use crate::client;
+
+
+// TODO: this should eventually be placed in a public key store
+const WEBUI_PUBLIC_KEY: &[u8] = include_bytes!("../keys/webui-public.pem");
 
 
 #[derive(PartialEq)]
@@ -326,6 +339,63 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
 }
 
 
+fn token_info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+    let api_token = match matches.value_of("token_file") {
+        Some(fname) => {
+            if !std::path::Path::new(fname).exists() {
+                return CliError::new(format!("Error: {} does not exist", fname), 1);
+            }
+            match std::fs::read_to_string(fname) {
+                Ok(s) => Some(s.trim().to_string()),
+                Err(err) => return CliError::new_stdio(err, 1)
+            }
+        },
+        None => match api_token {
+            Some(tok) => Some(tok),
+            None => match std::env::var_os("REROBOTS_API_TOKEN") {
+                Some(tok) => Some(tok.into_string().unwrap()),
+                None => None
+            }
+        }
+    };
+    if api_token.is_none() {
+        return CliError::new("No API token given", 1);
+    }
+    let api_token = api_token.unwrap();
+
+    let alg = PKeyWithDigest {
+        digest: MessageDigest::sha256(),
+        key: PKey::public_key_from_pem(WEBUI_PUBLIC_KEY).unwrap(),
+    };
+    let now = std::time::SystemTime::now();
+    let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+
+    let result: Result<Token<Header, Claims, _>, jwt::error::Error> = api_token.verify_with_key(&alg);
+    let parsed_tok = match result {
+        Ok(tok) => tok,
+        Err(err) => match err {
+            jwt::error::Error::InvalidSignature => return CliError::new("Not a valid signature", 1),
+            _ => return CliError::new("Unknown error", 1)
+        }
+    };
+    let claims = parsed_tok.claims();
+    let subject = claims.registered.subject.as_ref().unwrap();
+    println!("subject: {}", subject);
+    match claims.registered.expiration {
+        Some(exp) => {
+            if exp < utime {
+                return CliError::new("Expired", 1)
+            } else {
+                println!("expiration: {:?}", Utc.timestamp(exp as i64, 0))
+            }
+        },
+        None => println!("never expires")
+    };
+
+    Ok(())
+}
+
+
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client").max_term_width(80)
         .subcommand(SubCommand::with_name("version")
@@ -406,7 +476,12 @@ pub fn main() -> Result<(), CliError> {
                     .arg(Arg::with_name("ssh_args")
                          .required(false)
                          .multiple(true)
-                         .last(true)));
+                         .last(true)))
+        .subcommand(SubCommand::with_name("token")
+                    .about("Get information about an API token")
+                    .arg(Arg::with_name("token_file")
+                         .value_name("FILE")
+                         .help("plaintext file containing API token; if not given, use REROBOTS_API_TOKEN environment variable or switch `-t`")));
 
     let matches = app.get_matches();
 
@@ -464,6 +539,8 @@ pub fn main() -> Result<(), CliError> {
         return isready_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("ssh") {
         return ssh_subcommand(matches, api_token);
+    } else if let Some(matches) = matches.subcommand_matches("token") {
+        return token_info_subcommand(matches, api_token);
     } else {
         println!("No command given. Try `rerobots -h`");
     }
