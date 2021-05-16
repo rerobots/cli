@@ -14,6 +14,7 @@ openssl = { version = "0.10" }
 actix = "0.10"
 awc = { version = "2", features = ["openssl"] }
 jwt = { version = "0.11", features = ["openssl"] }
+chrono = "0.4"
 
 [dependencies.clap]
 version = "2.33.0"
