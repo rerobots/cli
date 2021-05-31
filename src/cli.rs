@@ -141,6 +141,51 @@ fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pforma
 }
 
 
+fn get_sshkey_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, default_confirm: DefaultConfirmAnswer) -> Result<(), CliError> {
+    let instance_id = matches.value_of("instance_id");
+
+    let path = match matches.value_of("secret_key_path") {
+        Some(path) => path,
+        None => "key.pem"
+    };
+    if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
+        if default_confirm == DefaultConfirmAnswer::NO {
+            return CliError::new(format!("Error: {} already exists", path), 1);
+        }
+        let prompt = format!("Overwrite existing file at {} with new secret key? [y/N]", path);
+        loop {
+            print!("{} ", prompt);
+            std::io::stdout().flush().unwrap();
+            let mut choice = String::new();
+            match std::io::stdin().read_line(&mut choice) {
+                Ok(_) => {
+                    choice.make_ascii_lowercase();
+                    let choicel = choice.trim();
+                    if choicel == "n" || choicel == "no" || choicel.len() == 0 {
+                        return CliError::newrc(1);
+                    } else if choicel == "y" || choicel == "yes" {
+                        break;
+                    }
+                },
+                Err(err) => {
+                    return CliError::new_stdio(err, 1);
+                }
+            }
+        }
+    }
+
+    let key = match client::get_instance_sshkey(instance_id, api_token) {
+        Ok(k) => k,
+        Err(err) => return CliError::new_std(err, 1)
+    };
+
+    match write_secret_key(path, &key) {
+        Ok(()) => Ok(()),
+        Err(err) => CliError::new_std(err, 1)
+    }
+}
+
+
 fn wdinfo_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pformat: PrintingFormat) -> Result<(), CliError> {
     let wdeployment_id = matches.value_of("wdeployment_id").unwrap();
     let payload = match client::api_wdeployment_info(wdeployment_id, api_token) {
@@ -222,7 +267,6 @@ fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnsw
 
 
 fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
-    let default_confirm = decide_default_confirmation(matches);
     let wdid_or_wtype = matches.value_of("wdid_or_wtype").unwrap();
 
     let given_public_key = matches.is_present("public_key");
@@ -239,54 +283,11 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
         None => None
     };
 
-    let secret_key_path = if !given_public_key {
-        let path = match matches.value_of("secret_key") {
-            Some(path) => path,
-            None => "key.pem"
-        };
-        if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
-            if default_confirm == DefaultConfirmAnswer::NO {
-                return CliError::new(format!("Error: {} already exists", path), 1);
-            }
-            let prompt = format!("Overwrite existing file at {} with new secret key? [y/N]", path);
-            loop {
-                print!("{} ", prompt);
-                std::io::stdout().flush().unwrap();
-                let mut choice = String::new();
-                match std::io::stdin().read_line(&mut choice) {
-                    Ok(_) => {
-                        choice.make_ascii_lowercase();
-                        let choicel = choice.trim();
-                        if choicel == "n" || choicel == "no" || choicel.len() == 0 {
-                            return CliError::newrc(1);
-                        } else if choicel == "y" || choicel == "yes" {
-                            break;
-                        }
-                    },
-                    Err(err) => {
-                        return CliError::new_stdio(err, 1);
-                    }
-                }
-            }
-        }
-        Some(path)
-    } else if matches.is_present("secret_key") {
-        return CliError::new("Error: both --public-key and --secret-key given", 1);
-    } else {
-        None
-    };
-
     let payload = match client::api_launch_instance(wdid_or_wtype, api_token, public_key) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1)
     };
     println!("{}", payload["id"].as_str().unwrap());
-    if !given_public_key {
-        match write_secret_key(secret_key_path.unwrap(), payload["sshkey"].as_str().unwrap()) {
-            Ok(()) => (),
-            Err(err) => return CliError::new_std(err, 1)
-        };
-    }
     Ok(())
 }
 
@@ -416,6 +417,12 @@ pub fn main() -> Result<(), CliError> {
              .short("-t")
              .value_name("FILE")
              .help("plaintext file containing API token; with this flag, the REROBOTS_API_TOKEN environment variable is ignored"))
+        .arg(Arg::with_name("assume_yes")
+             .short("y")
+             .help("assume \"yes\" for any questions required to execute the command; otherwise, interactive prompts will appear to confirm actions as needed"))
+        .arg(Arg::with_name("assume_no")
+             .short("n")
+             .help("assume \"no\" for any questions required to execute the command; this can prevent destructive actions, e.g., overwriting a local file"))
         .subcommand(SubCommand::with_name("search")
                     .about("Search for matching deployments. empty query implies show all existing workspace deployments")
                     .arg(Arg::with_name("query")
@@ -433,6 +440,14 @@ pub fn main() -> Result<(), CliError> {
                     .about("Print summary about instance")
                     .arg(Arg::with_name("instance_id")
                          .value_name("ID")))
+        .subcommand(SubCommand::with_name("get-ssh-key")
+                    .about("Get secret key for SSH access to instance")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID"))
+                    .arg(Arg::with_name("secret_key_path")
+                         .short("f")
+                         .value_name("FILE")
+                         .help("name of file in which to write new secret key (default key.pem)")))
         .subcommand(SubCommand::with_name("wdinfo")
                     .about("Print summary about workspace deployment")
                     .arg(Arg::with_name("wdeployment_id")
@@ -444,20 +459,10 @@ pub fn main() -> Result<(), CliError> {
                          .value_name("ID")
                          .required(true)
                          .help("workspace type or deployment ID"))
-                    .arg(Arg::with_name("assume_yes")
-                         .short("y")
-                         .help("assume \"yes\" for any questions required to launch instance; otherwise, interactive prompts will appear to confirm actions as needed"))
-                    .arg(Arg::with_name("assume_no")
-                         .short("n")
-                         .help("assume \"no\" for any questions required to launch instance; in practice, this prevents launching if doing so requires destructive actions, e.g., overwriting a local file"))
                     .arg(Arg::with_name("public_key")
                          .long("public-key")
                          .value_name("FILE")
-                         .help("path of public key to use; if not given, then a new key pair will be generated; this switch cannot be used with --secret-key"))
-                    .arg(Arg::with_name("secret_key")
-                         .long("secret-key")
-                         .value_name("FILE")
-                         .help("name of file in which to write new secret key (default key.pem)")))
+                         .help("path of public key to use; if not given, then a new key pair will be generated")))
         .subcommand(SubCommand::with_name("terminate")
                     .about("Terminate instance")
                     .arg(Arg::with_name("instance_id")
@@ -519,6 +524,8 @@ pub fn main() -> Result<(), CliError> {
         None => None
     };
 
+    let default_confirm = decide_default_confirmation(&matches);
+
     if matches.is_present("version") {
         println!(crate_version!());
     } else if let Some(_) = matches.subcommand_matches("version") {
@@ -529,6 +536,8 @@ pub fn main() -> Result<(), CliError> {
         return list_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("info") {
         return info_subcommand(matches, api_token, pformat);
+    } else if let Some(matches) = matches.subcommand_matches("get-ssh-key") {
+        return get_sshkey_subcommand(matches, api_token, default_confirm);
     } else if let Some(matches) = matches.subcommand_matches("wdinfo") {
         return wdinfo_subcommand(matches, api_token, pformat);
     } else if let Some(matches) = matches.subcommand_matches("launch") {

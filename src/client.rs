@@ -159,6 +159,31 @@ pub fn api_instance_info<S: ToString>(instance_id: Option<S>, token: Option<Stri
 }
 
 
+pub fn get_instance_sshkey<S: ToString>(instance_id: Option<S>, token: Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+    let instance_id = select_instance(instance_id, &token)?;
+    let path = format!("/instance/{}/sshkey", instance_id);
+    let url = format!("{}{}", get_origin(), path);
+
+    let mut sys = System::new("wclient");
+    actix::SystemRunner::block_on(&mut sys, async move {
+        let client = create_client(token)?;
+        let mut resp = client.get(url).send().await?;
+        if resp.status() == 200 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
+            Ok(payload["key"].as_str().unwrap().to_string())
+        } else if resp.status() == 404 {
+            ClientError::newbox("instance not found")
+        } else if resp.status() == 400 {
+            let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+        } else {
+            ClientError::newbox(format!("server indicated error: {}", resp.status()))
+        }
+    })
+}
+
+
 pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let path = format!("/deployment/{}", wdeployment_id);
     let url = format!("{}{}", get_origin(), path);
