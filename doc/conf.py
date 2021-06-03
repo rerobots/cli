@@ -8,7 +8,7 @@ import sys
 
 sys.path.append(os.path.abspath('..'))
 
-project = 'rerobots CLI'
+project = 'CLI'
 copyright = '2021 rerobots, Inc'
 author = 'rerobots, Inc.'
 html_logo = '_static/logo.svg'
