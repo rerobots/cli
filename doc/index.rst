@@ -107,9 +107,7 @@ requests to instantiate from it now are likely to succeed. To do so, ::
   $ rerobots launch 2c0873b5-1da1-46e6-9658-c40379774edf
   f7856ad4-a9d7-43f5-8420-7073d10bceec
 
-which will result in a secret key being written locally to the file ``key.pem``.
-This key should be used for ssh connections, e.g., with commands of the form
-``ssh -i key.pem``. Get information about the new instance::
+Get information about the new instance::
 
   $ rerobots info f7856ad4-a9d7-43f5-8420-7073d10bceec
   {
@@ -128,6 +126,10 @@ This key should be used for ssh connections, e.g., with commands of the form
     ],
     "status": "READY"
   }
+
+When ``READY``, get the SSH secret key created for the instance::
+
+  $ rerobots get-ssh-key f7856ad4-a9d7-43f5-8420-7073d10bceec
 
 The section ``fwd`` contains an IP address and port at which ssh connections can
 be established to the instance host. The rerobots CLI provides a convenient
