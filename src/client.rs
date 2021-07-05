@@ -122,7 +122,7 @@ fn select_instance<S: ToString>(instance_id: Option<S>, token: &Option<String>) 
         None => {
             let payload = api_instances(token)?;
             let instances = payload["workspace_instances"].as_array().unwrap();
-            if instances.len() == 0 {
+            if instances.is_empty() {
                 ClientError::newbox("no active instances")
             } else if instances.len() > 1 {
                 ClientError::newbox("ambiguous command because more than one active instance")
@@ -268,7 +268,7 @@ pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_ke
         let client_req = create_client(token)?
             .post(url)
             .timeout(td);
-        let mut resp = if body.len() > 0 {
+        let mut resp = if !body.is_empty() {
             client_req.send_json(&body).await?
         } else {
             client_req.send().await?

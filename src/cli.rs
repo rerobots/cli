@@ -59,19 +59,19 @@ impl std::fmt::Debug for CliError {
 
 impl CliError {
     fn new<S: ToString>(msg: S, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(msg.to_string()), exitcode: exitcode })
+        Err(CliError { msg: Some(msg.to_string()), exitcode })
     }
 
     fn new_std(err: Box<dyn std::error::Error>, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(format!("{}", err)), exitcode: exitcode })
+        Err(CliError { msg: Some(format!("{}", err)), exitcode })
     }
 
     fn new_stdio(err: std::io::Error, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(format!("{}", err)), exitcode: exitcode })
+        Err(CliError { msg: Some(format!("{}", err)), exitcode })
     }
 
     fn newrc(exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: None, exitcode: exitcode })
+        Err(CliError { msg: None, exitcode })
     }
 }
 
@@ -161,7 +161,7 @@ fn get_sshkey_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, 
                 Ok(_) => {
                     choice.make_ascii_lowercase();
                     let choicel = choice.trim();
-                    if choicel == "n" || choicel == "no" || choicel.len() == 0 {
+                    if choicel == "n" || choicel == "no" || choicel.is_empty() {
                         return CliError::newrc(1);
                     } else if choicel == "y" || choicel == "yes" {
                         break;
@@ -205,7 +205,7 @@ fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -
     let instance_id = matches.value_of("instance_id");
     match client::api_terminate_instance(instance_id, api_token) {
         Ok(()) => Ok(()),
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => CliError::new_std(err, 1)
     }
 }
 
@@ -526,9 +526,7 @@ pub fn main() -> Result<(), CliError> {
 
     let default_confirm = decide_default_confirmation(&matches);
 
-    if matches.is_present("version") {
-        println!(crate_version!());
-    } else if let Some(_) = matches.subcommand_matches("version") {
+    if matches.is_present("version") || matches.subcommand_matches("version").is_some() {
         println!(crate_version!());
     } else if let Some(matches) = matches.subcommand_matches("search") {
         return search_subcommand(matches, api_token);
