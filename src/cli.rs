@@ -7,16 +7,16 @@ use std::io::prelude::*;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use chrono::{Utc, TimeZone};
+use chrono::{TimeZone, Utc};
 
 use clap::{Arg, SubCommand};
 
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
 
-use jwt::{Token, Header, Claims};
-use jwt::VerifyWithKey;
 use jwt::algorithm::openssl::PKeyWithDigest;
+use jwt::VerifyWithKey;
+use jwt::{Claims, Header, Token};
 
 use crate::client;
 
@@ -43,7 +43,7 @@ impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.msg {
             Some(m) => write!(f, "{}", m),
-            None => write!(f, "")
+            None => write!(f, ""),
         }
     }
 }
@@ -52,26 +52,38 @@ impl std::fmt::Debug for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.msg {
             Some(m) => write!(f, "{}", m),
-            None => write!(f, "")
+            None => write!(f, ""),
         }
     }
 }
 
 impl CliError {
     fn new<S: ToString>(msg: S, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(msg.to_string()), exitcode })
+        Err(CliError {
+            msg: Some(msg.to_string()),
+            exitcode,
+        })
     }
 
     fn new_std(err: Box<dyn std::error::Error>, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(format!("{}", err)), exitcode })
+        Err(CliError {
+            msg: Some(format!("{}", err)),
+            exitcode,
+        })
     }
 
     fn new_stdio(err: std::io::Error, exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: Some(format!("{}", err)), exitcode })
+        Err(CliError {
+            msg: Some(format!("{}", err)),
+            exitcode,
+        })
     }
 
     fn newrc(exitcode: i32) -> Result<(), CliError> {
-        Err(CliError { msg: None, exitcode })
+        Err(CliError {
+            msg: None,
+            exitcode,
+        })
     }
 }
 
@@ -84,7 +96,10 @@ enum PrintingFormat {
 }
 
 
-fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn search_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
     let query = matches.value_of("query");
     let type_constraint = if matches.is_present("with_user_provided") {
         None
@@ -93,7 +108,7 @@ fn search_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
     };
     let payload = match client::api_search(query, type_constraint.as_ref(), api_token) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     for wd in payload["workspace_deployments"].as_array().unwrap().iter() {
         let wd = wd.as_str().unwrap();
@@ -108,17 +123,24 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
     let be_quiet = matches.is_present("quiet");
     let payload = match client::api_instances(api_token) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     if !be_quiet {
         println!("instance\t\t\t\tworkspace deployment");
     }
-    for (j, inst) in payload["workspace_instances"].as_array().unwrap().iter().enumerate() {
+    for (j, inst) in payload["workspace_instances"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+    {
         let inst = inst.as_str().unwrap();
         if be_quiet {
             println!("{}", inst);
         } else {
-            let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j].as_str().unwrap();
+            let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j]
+                .as_str()
+                .unwrap();
             println!("{}\t{}", inst, wdeployment_id);
         }
     }
@@ -126,33 +148,45 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
 }
 
 
-fn info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pformat: PrintingFormat) -> Result<(), CliError> {
+fn info_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+    pformat: PrintingFormat,
+) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
     let payload = match client::api_instance_info(instance_id, api_token) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     if pformat == PrintingFormat::YAML {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
-    } else {  // pformat == PrintingFormat::JSON
+    } else {
+        // pformat == PrintingFormat::JSON
         println!("{}", serde_json::to_string_pretty(&payload).unwrap());
     }
     Ok(())
 }
 
 
-fn get_sshkey_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, default_confirm: DefaultConfirmAnswer) -> Result<(), CliError> {
+fn get_sshkey_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+    default_confirm: DefaultConfirmAnswer,
+) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
 
     let path = match matches.value_of("secret_key_path") {
         Some(path) => path,
-        None => "key.pem"
+        None => "key.pem",
     };
     if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
         if default_confirm == DefaultConfirmAnswer::NO {
             return CliError::new(format!("Error: {} already exists", path), 1);
         }
-        let prompt = format!("Overwrite existing file at {} with new secret key? [y/N]", path);
+        let prompt = format!(
+            "Overwrite existing file at {} with new secret key? [y/N]",
+            path
+        );
         loop {
             print!("{} ", prompt);
             std::io::stdout().flush().unwrap();
@@ -166,7 +200,7 @@ fn get_sshkey_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, 
                     } else if choicel == "y" || choicel == "yes" {
                         break;
                     }
-                },
+                }
                 Err(err) => {
                     return CliError::new_stdio(err, 1);
                 }
@@ -176,53 +210,64 @@ fn get_sshkey_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, 
 
     let key = match client::get_instance_sshkey(instance_id, api_token) {
         Ok(k) => k,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
 
     match write_secret_key(path, &key) {
         Ok(()) => Ok(()),
-        Err(err) => CliError::new_std(err, 1)
+        Err(err) => CliError::new_std(err, 1),
     }
 }
 
 
-fn wdinfo_subcommand(matches: &clap::ArgMatches, api_token: Option<String>, pformat: PrintingFormat) -> Result<(), CliError> {
+fn wdinfo_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+    pformat: PrintingFormat,
+) -> Result<(), CliError> {
     let wdeployment_id = matches.value_of("wdeployment_id").unwrap();
     let payload = match client::api_wdeployment_info(wdeployment_id, api_token) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     if pformat == PrintingFormat::YAML {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
-    } else {  // pformat == PrintingFormat::JSON
+    } else {
+        // pformat == PrintingFormat::JSON
         println!("{}", serde_json::to_string_pretty(&payload).unwrap());
     }
     Ok(())
 }
 
 
-fn terminate_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn terminate_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
     match client::api_terminate_instance(instance_id, api_token) {
         Ok(()) => Ok(()),
-        Err(err) => CliError::new_std(err, 1)
+        Err(err) => CliError::new_std(err, 1),
     }
 }
 
 
-fn isready_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn isready_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
     let blocking = matches.is_present("blocking");
     let mut instance_id = matches.value_of("instance_id").map(|s| s.to_string());
     loop {
         let payload = match client::api_instance_info(instance_id.clone(), api_token.clone()) {
             Ok(p) => p,
-            Err(err) => return CliError::new_std(err, 1)
+            Err(err) => return CliError::new_std(err, 1),
         };
         let status = payload["status"].as_str().unwrap();
         if status == "READY" {
-            return Ok(())
+            return Ok(());
         } else if status != "INIT" || !blocking {
-            return CliError::newrc(1)
+            return CliError::newrc(1);
         }
         if instance_id.is_none() {
             instance_id = Some(payload["id"].as_str().unwrap().to_string());
@@ -247,7 +292,11 @@ fn user_only_perm(fp: &mut File) -> Result<(), Box<dyn std::error::Error>> {
 
 
 fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut fp = OpenOptions::new().create(true).write(true).truncate(true).open(fname)?;
+    let mut fp = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(fname)?;
     user_only_perm(&mut fp)?;
     fp.write_all(secret_key.as_bytes())?;
     fp.sync_all()?;
@@ -266,7 +315,10 @@ fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnsw
 }
 
 
-fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn launch_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
     let wdid_or_wtype = matches.value_of("wdid_or_wtype").unwrap();
 
     let given_public_key = matches.is_present("public_key");
@@ -277,15 +329,15 @@ fn launch_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> R
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
-                Err(err) => return CliError::new_stdio(err, 1)
+                Err(err) => return CliError::new_stdio(err, 1),
             }
-        },
-        None => None
+        }
+        None => None,
     };
 
     let payload = match client::api_launch_instance(wdid_or_wtype, api_token, public_key) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     println!("{}", payload["id"].as_str().unwrap());
     Ok(())
@@ -297,18 +349,22 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
     let instance_id = matches.value_of("instance_id");
     let payload = match client::api_instance_info(instance_id, api_token) {
         Ok(p) => p,
-        Err(err) => return CliError::new_std(err, 1)
+        Err(err) => return CliError::new_std(err, 1),
     };
     let status = payload["status"].as_str().unwrap();
     if status != "READY" {
         return CliError::new("Error: instance is not READY", 1);
     }
     let username = "root";
-    let ipv4 = payload["fwd"].as_object().unwrap()["ipv4"].as_str().unwrap();
-    let port = payload["fwd"].as_object().unwrap()["port"].as_u64().unwrap();
+    let ipv4 = payload["fwd"].as_object().unwrap()["ipv4"]
+        .as_str()
+        .unwrap();
+    let port = payload["fwd"].as_object().unwrap()["port"]
+        .as_u64()
+        .unwrap();
     let args: Vec<&str> = match matches.values_of("ssh_args") {
         Some(v) => v.collect(),
-        None => vec![]
+        None => vec![],
     };
 
     let mut cmd = &mut std::process::Command::new("ssh");
@@ -324,14 +380,16 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
     }
 
     let status = match cmd
-        .arg("-p").arg(port.to_string())
+        .arg("-p")
+        .arg(port.to_string())
         .arg(format!("{}@{}", username, ipv4))
         .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
-        .status() {
-            Ok(rc) => rc,
-            Err(err) => return CliError::new_stdio(err, 1)
-        };
+        .status()
+    {
+        Ok(rc) => rc,
+        Err(err) => return CliError::new_stdio(err, 1),
+    };
     if status.success() {
         Ok(())
     } else {
@@ -340,7 +398,10 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
 }
 
 
-fn token_info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
+fn token_info_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
     let api_token = match matches.value_of("token_file") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
@@ -348,16 +409,16 @@ fn token_info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) 
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
-                Err(err) => return CliError::new_stdio(err, 1)
+                Err(err) => return CliError::new_stdio(err, 1),
             }
-        },
+        }
         None => match api_token {
             Some(tok) => Some(tok),
             None => match std::env::var_os("REROBOTS_API_TOKEN") {
                 Some(tok) => Some(tok.into_string().unwrap()),
-                None => None
-            }
-        }
+                None => None,
+            },
+        },
     };
     if api_token.is_none() {
         return CliError::new("No API token given", 1);
@@ -371,13 +432,16 @@ fn token_info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) 
     let now = std::time::SystemTime::now();
     let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
 
-    let result: Result<Token<Header, Claims, _>, jwt::error::Error> = api_token.verify_with_key(&alg);
+    let result: Result<Token<Header, Claims, _>, jwt::error::Error> =
+        api_token.verify_with_key(&alg);
     let parsed_tok = match result {
         Ok(tok) => tok,
         Err(err) => match err {
-            jwt::error::Error::InvalidSignature => return CliError::new("Not a valid signature", 1),
-            _ => return CliError::new("Unknown error", 1)
-        }
+            jwt::error::Error::InvalidSignature => {
+                return CliError::new("Not a valid signature", 1)
+            }
+            _ => return CliError::new("Unknown error", 1),
+        },
     };
     let claims = parsed_tok.claims();
     let subject = claims.registered.subject.as_ref().unwrap();
@@ -385,12 +449,12 @@ fn token_info_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) 
     match claims.registered.expiration {
         Some(exp) => {
             if exp < utime {
-                return CliError::new("Expired", 1)
+                return CliError::new("Expired", 1);
             } else {
                 println!("expiration: {:?}", Utc.timestamp(exp as i64, 0))
             }
-        },
-        None => println!("never expires")
+        }
+        None => println!("never expires"),
     };
 
     Ok(())
@@ -495,7 +559,8 @@ pub fn main() -> Result<(), CliError> {
     } else {
         "warn"
     };
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_loglevel)).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(default_loglevel))
+        .init();
 
     let pformat = match matches.value_of("printformat") {
         Some(given_pformat) => {
@@ -505,10 +570,13 @@ pub fn main() -> Result<(), CliError> {
             } else if given_pformat_lower == "yaml" {
                 PrintingFormat::YAML
             } else {
-                return CliError::new(format!("unrecognized format: {}", given_pformat).as_str(), 1)
+                return CliError::new(
+                    format!("unrecognized format: {}", given_pformat).as_str(),
+                    1,
+                );
             }
-        },
-        None => PrintingFormat::DEFAULT
+        }
+        None => PrintingFormat::DEFAULT,
     };
 
     let api_token = match matches.value_of("apitoken") {
@@ -518,10 +586,10 @@ pub fn main() -> Result<(), CliError> {
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
-                Err(err) => return CliError::new_stdio(err, 1)
+                Err(err) => return CliError::new_stdio(err, 1),
             }
-        },
-        None => None
+        }
+        None => None,
     };
 
     let default_confirm = decide_default_confirmation(&matches);

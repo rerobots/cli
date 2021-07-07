@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use actix::prelude::*;
 
-use openssl::ssl::{SslMethod, SslConnector};
+use openssl::ssl::{SslConnector, SslMethod};
 
 
 struct ClientError {
@@ -28,9 +28,11 @@ impl std::fmt::Debug for ClientError {
 impl ClientError {
     fn newbox<T, S>(msg: S) -> Result<T, Box<dyn std::error::Error>>
     where
-        S: ToString
+        S: ToString,
     {
-        Err(Box::new(ClientError { msg: msg.to_string() }))
+        Err(Box::new(ClientError {
+            msg: msg.to_string(),
+        }))
     }
 }
 
@@ -38,7 +40,7 @@ impl ClientError {
 fn get_origin() -> &'static str {
     match option_env!("REROBOTS_ORIGIN") {
         Some(u) => u,
-        None => "https://api.rerobots.net"
+        None => "https://api.rerobots.net",
     }
 }
 
@@ -48,21 +50,25 @@ fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::erro
         Some(tok) => Some(format!("Bearer {}", tok)),
         None => match std::env::var_os("REROBOTS_API_TOKEN") {
             Some(tok) => Some(format!("Bearer {}", tok.into_string().unwrap())),
-            None => None
-        }
+            None => None,
+        },
     };
 
     let connector = SslConnector::builder(SslMethod::tls())?.build();
-    let client = awc::Client::builder()
-        .connector(awc::Connector::new().ssl(connector).finish());
+    let client = awc::Client::builder().connector(awc::Connector::new().ssl(connector).finish());
     Ok(match authheader {
         Some(hv) => client.header("Authorization", hv),
-        None => client
-    }.finish())
+        None => client,
+    }
+    .finish())
 }
 
 
-pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_search(
+    query: Option<&str>,
+    types: Option<&Vec<&str>>,
+    token: Option<String>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let mut path = "/deployments?info=t".to_string();
     if let Some(q) = query {
         path.push_str(format!("&q={}", q).as_str());
@@ -91,7 +97,9 @@ pub fn api_search(query: Option<&str>, types: Option<&Vec<&str>>, token: Option<
 }
 
 
-pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_instances(
+    token: Option<String>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let url = format!("{}/instances", get_origin());
 
     let mut sys = System::new("wclient");
@@ -100,7 +108,10 @@ pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            debug!("resp to GET /instances: {}", serde_json::to_string(&payload)?);
+            debug!(
+                "resp to GET /instances: {}",
+                serde_json::to_string(&payload)?
+            );
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
@@ -112,10 +123,13 @@ pub fn api_instances(token: Option<String>) -> Result<serde_json::Value, Box<dyn
 }
 
 
-fn select_instance<S: ToString>(instance_id: Option<S>, token: &Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+fn select_instance<S: ToString>(
+    instance_id: Option<S>,
+    token: &Option<String>,
+) -> Result<String, Box<dyn std::error::Error>> {
     let token = match token {
         Some(s) => Some(s.clone()),
-        None => None
+        None => None,
     };
     match instance_id {
         Some(inid) => Ok(inid.to_string()),
@@ -134,7 +148,10 @@ fn select_instance<S: ToString>(instance_id: Option<S>, token: &Option<String>) 
 }
 
 
-pub fn api_instance_info<S: ToString>(instance_id: Option<S>, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_instance_info<S: ToString>(
+    instance_id: Option<S>,
+    token: Option<String>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
     let path = format!("/instance/{}", instance_id);
     let url = format!("{}{}", get_origin(), path);
@@ -159,7 +176,10 @@ pub fn api_instance_info<S: ToString>(instance_id: Option<S>, token: Option<Stri
 }
 
 
-pub fn get_instance_sshkey<S: ToString>(instance_id: Option<S>, token: Option<String>) -> Result<String, Box<dyn std::error::Error>> {
+pub fn get_instance_sshkey<S: ToString>(
+    instance_id: Option<S>,
+    token: Option<String>,
+) -> Result<String, Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
     let path = format!("/instance/{}/sshkey", instance_id);
     let url = format!("{}{}", get_origin(), path);
@@ -184,7 +204,10 @@ pub fn get_instance_sshkey<S: ToString>(instance_id: Option<S>, token: Option<St
 }
 
 
-pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_wdeployment_info<S: std::fmt::Display>(
+    wdeployment_id: S,
+    token: Option<String>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let path = format!("/deployment/{}", wdeployment_id);
     let url = format!("{}{}", get_origin(), path);
 
@@ -195,8 +218,8 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Opti
         let has_api_token = req.headers().contains_key("Authorization");
         let mut resp = req.send().await?;
         if resp.status() == 200 {
-
-            let mut payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
+            let mut payload: serde_json::Value =
+                serde_json::from_slice(resp.body().await?.as_ref())?;
             debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
 
             if has_api_token {
@@ -204,19 +227,32 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Opti
                 let url = format!("{}{}", get_origin(), path);
                 let mut resp = client.get(url).send().await?;
                 if resp.status() == 200 {
-                    let rules_payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-                    debug!("resp to GET {}: {}", path, serde_json::to_string(&rules_payload)?);
-                    payload.as_object_mut().unwrap().insert("cap".to_string(), rules_payload);
+                    let rules_payload: serde_json::Value =
+                        serde_json::from_slice(resp.body().await?.as_ref())?;
+                    debug!(
+                        "resp to GET {}: {}",
+                        path,
+                        serde_json::to_string(&rules_payload)?
+                    );
+                    payload
+                        .as_object_mut()
+                        .unwrap()
+                        .insert("cap".to_string(), rules_payload);
                 } else if resp.status() == 400 {
-                    let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-                    return ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()));
+                    let payload: serde_json::Value =
+                        serde_json::from_slice(resp.body().await?.as_ref())?;
+                    return ClientError::newbox(String::from(
+                        payload["error_message"].as_str().unwrap(),
+                    ));
                 } else {
-                    return ClientError::newbox(format!("server indicated error: {}", resp.status()));
+                    return ClientError::newbox(format!(
+                        "server indicated error: {}",
+                        resp.status()
+                    ));
                 }
             }
 
             Ok(payload)
-
         } else if resp.status() == 404 {
             ClientError::newbox("workspace deployment not found")
         } else if resp.status() == 400 {
@@ -229,7 +265,10 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(wdeployment_id: S, token: Opti
 }
 
 
-pub fn api_terminate_instance(instance_id: Option<&str>, token: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn api_terminate_instance(
+    instance_id: Option<&str>,
+    token: Option<String>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
     let path = format!("/terminate/{}", instance_id);
     let url = format!("{}{}", get_origin(), path);
@@ -253,7 +292,11 @@ pub fn api_terminate_instance(instance_id: Option<&str>, token: Option<String>) 
 }
 
 
-pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_key: Option<String>) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+pub fn api_launch_instance(
+    wdid_or_wtype: &str,
+    token: Option<String>,
+    public_key: Option<String>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let td = std::time::Duration::new(10, 0);
     let path = format!("/new/{}", wdid_or_wtype);
     let url = format!("{}{}", get_origin(), path);
@@ -265,9 +308,7 @@ pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_ke
 
     let mut sys = System::new("wclient");
     actix::SystemRunner::block_on(&mut sys, async move {
-        let client_req = create_client(token)?
-            .post(url)
-            .timeout(td);
+        let client_req = create_client(token)?.post(url).timeout(td);
         let mut resp = if !body.is_empty() {
             client_req.send_json(&body).await?
         } else {
@@ -275,7 +316,11 @@ pub fn api_launch_instance(wdid_or_wtype: &str, token: Option<String>, public_ke
         };
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            debug!("resp to POST {}: {}", path, serde_json::to_string(&payload)?);
+            debug!(
+                "resp to POST {}: {}",
+                path,
+                serde_json::to_string(&payload)?
+            );
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
