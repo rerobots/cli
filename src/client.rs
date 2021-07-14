@@ -37,11 +37,18 @@ impl ClientError {
 }
 
 
-fn get_origin() -> &'static str {
+#[cfg(not(test))]
+fn get_origin() -> String {
     match option_env!("REROBOTS_ORIGIN") {
         Some(u) => u,
         None => "https://api.rerobots.net",
     }
+    .to_string()
+}
+
+#[cfg(test)]
+fn get_origin() -> String {
+    mockito::server_url()
 }
 
 
@@ -329,4 +336,31 @@ pub fn api_launch_instance(
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
     })
+}
+
+
+#[cfg(test)]
+mod tests {
+    use mockito::mock;
+
+    use super::api_search;
+
+    #[test]
+    fn empty_search() {
+        let _m = mock("GET", "/deployments?info=t")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+  "info": {},
+  "page_count": 1,
+  "workspace_deployments": []
+}"#,
+            )
+            .create();
+
+        let res = api_search(None, None, None).unwrap();
+        let wds = res["workspace_deployments"].as_array().unwrap();
+        assert_eq!(wds.len(), 0)
+    }
 }
