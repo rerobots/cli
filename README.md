@@ -34,6 +34,11 @@ To perform tests,
 
     cargo test
 
+To check code style,
+
+    cargo +nightly fmt -- --check
+    cargo clippy --tests -- -D clippy::all
+
 Building the User's Guide requires [Sphinx](https://www.sphinx-doc.org/),
 which can be installed by
 
