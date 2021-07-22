@@ -321,7 +321,6 @@ fn launch_subcommand(
 ) -> Result<(), CliError> {
     let wdid_or_wtype = matches.value_of("wdid_or_wtype").unwrap();
 
-    let given_public_key = matches.is_present("public_key");
     let public_key = match matches.value_of("public_key") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
