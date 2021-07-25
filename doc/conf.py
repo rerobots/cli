@@ -9,7 +9,7 @@ import sys
 sys.path.append(os.path.abspath('..'))
 
 project = 'CLI'
-copyright = '2021 rerobots, Inc'
+copyright = '2021 rerobots, Inc | <a href="https://github.com/rerobots/cli">source code</a>'
 author = 'rerobots, Inc.'
 html_logo = '_static/logo.svg'
 

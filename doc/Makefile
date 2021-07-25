@@ -5,4 +5,4 @@ all:
 	python -m sphinx -b html . build
 
 clean:
-	rm -rf build intro.rst
+	rm -rf build
