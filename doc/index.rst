@@ -9,6 +9,7 @@ The corresponding source code repository is hosted at https://github.com/rerobot
    :numbered:
    :maxdepth: 2
 
+   install
    intro
 
 .. _rerobots: https://rerobots.net/
