@@ -363,4 +363,42 @@ mod tests {
         let wds = res["workspace_deployments"].as_array().unwrap();
         assert_eq!(wds.len(), 0)
     }
+
+
+    #[test]
+    fn search_with_1() {
+        let _m = mock("GET", "/deployments?info=t")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+  "workspace_deployments": [
+    "82051afa-b331-4b82-8bd4-9eea9ad78241"
+  ],
+  "page_count": 1,
+  "info": {
+    "82051afa-b331-4b82-8bd4-9eea9ad78241": {
+      "type": "fixed_misty2",
+      "type_version": 1,
+      "supported_addons": [
+        "cam",
+        "mistyproxy",
+        "py"
+      ],
+      "desc": "",
+      "region": "us:cali",
+      "icounter": 166,
+      "created": "2021-07-17 03:37:44.284117",
+      "queuelen": 0
+    }
+  }
+}"#,
+            )
+            .create();
+
+        let res = api_search(None, None, None).unwrap();
+        let wds = res["workspace_deployments"].as_array().unwrap();
+        assert_eq!(wds.len(), 1);
+        assert_eq!(wds[0], "82051afa-b331-4b82-8bd4-9eea9ad78241");
+    }
 }
