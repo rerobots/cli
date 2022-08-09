@@ -60,3 +60,27 @@ fn prints_help_search() {
     assert.success();
     insta::assert_display_snapshot!("prints_help_search", String::from_utf8(output.stdout).unwrap());
 }
+
+
+#[test]
+fn prints_help_launch() {
+    let mut cmd = Command::cargo_bin("rerobots").unwrap();
+    let assert = cmd.arg("help").arg("launch").assert();
+    let output = assert.get_output().clone();
+    assert.success();
+    insta::assert_display_snapshot!("prints_help_launch", String::from_utf8(output.stdout).unwrap());
+
+    // Alternative style: -h
+    let mut cmd = Command::cargo_bin("rerobots").unwrap();
+    let assert = cmd.arg("launch").arg("-h").assert();
+    let output = assert.get_output().clone();
+    assert.success();
+    insta::assert_display_snapshot!("prints_help_launch", String::from_utf8(output.stdout).unwrap());
+
+    // Alternative style: --help
+    let mut cmd = Command::cargo_bin("rerobots").unwrap();
+    let assert = cmd.arg("launch").arg("--help").assert();
+    let output = assert.get_output().clone();
+    assert.success();
+    insta::assert_display_snapshot!("prints_help_launch", String::from_utf8(output.stdout).unwrap());
+}

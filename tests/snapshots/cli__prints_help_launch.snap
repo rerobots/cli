@@ -1,0 +1,22 @@
+---
+source: tests/cli.rs
+assertion_line: 71
+expression: "String::from_utf8(output.stdout).unwrap()"
+---
+rerobots-launch 
+Launch instance from specified workspace deployment or type
+
+USAGE:
+    rerobots launch [OPTIONS] <ID>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+        --public-key <FILE>    path of public key to use; if not given, then a
+                               new key pair will be generated
+
+ARGS:
+    <ID>    workspace type or deployment ID
+
