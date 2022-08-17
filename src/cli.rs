@@ -154,10 +154,14 @@ fn info_subcommand(
     pformat: PrintingFormat,
 ) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
-    let payload = match client::api_instance_info(instance_id, api_token) {
+    let mut payload = match client::api_instance_info(instance_id, api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
+    payload["url"] = format!(
+        "https://rerobots.net/instance/{}",
+        payload["id"].as_str().unwrap()
+    ).into();
     if pformat == PrintingFormat::YAML {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
     } else {
