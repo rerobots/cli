@@ -16,7 +16,7 @@ html_logo = '_static/logo.svg'
 version = ''
 release = ''
 
-language = None
+language = 'en'
 
 extensions = ['sphinx.ext.autodoc']
 
