@@ -161,7 +161,8 @@ fn info_subcommand(
     payload["url"] = format!(
         "https://rerobots.net/instance/{}",
         payload["id"].as_str().unwrap()
-    ).into();
+    )
+    .into();
     if pformat == PrintingFormat::YAML {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
     } else {
