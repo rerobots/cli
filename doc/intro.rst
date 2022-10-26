@@ -66,7 +66,7 @@ in text. (This video can also be watched at https://asciinema.org/a/l0l2yh83JtAM
 .. highlight:: none
 
 Before beginning, `get an API token
-<https://help.rerobots.net/webui.html#making-and-revoking-api-tokens>`_ (`from
+<https://docs.rerobots.net/webui/making-and-revoking-api-tokens>`_ (`from
 the Web UI <https://rerobots.net/tokens>`_). Now assign it to an environment variable.
 For example, if the API token is saved to a local file named ``tok``, then ::
 
