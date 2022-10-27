@@ -55,10 +55,7 @@ fn get_origin() -> String {
 fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
         Some(tok) => Some(format!("Bearer {}", tok)),
-        None => match std::env::var_os("REROBOTS_API_TOKEN") {
-            Some(tok) => Some(format!("Bearer {}", tok.into_string().unwrap())),
-            None => None,
-        },
+        None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
     };
 
     let connector = SslConnector::builder(SslMethod::tls())?.build();
@@ -134,10 +131,7 @@ fn select_instance<S: ToString>(
     instance_id: Option<S>,
     token: &Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let token = match token {
-        Some(s) => Some(s.clone()),
-        None => None,
-    };
+    let token = token.as_ref().map(|s| s.clone());
     match instance_id {
         Some(inid) => Ok(inid.to_string()),
         None => {

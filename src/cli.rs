@@ -180,10 +180,7 @@ fn get_sshkey_subcommand(
 ) -> Result<(), CliError> {
     let instance_id = matches.value_of("instance_id");
 
-    let path = match matches.value_of("secret_key_path") {
-        Some(path) => path,
-        None => "key.pem",
-    };
+    let path = matches.value_of("secret_key_path").unwrap_or("key.pem");
     if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
         if default_confirm == DefaultConfirmAnswer::NO {
             return CliError::new(format!("Error: {} already exists", path), 1);
@@ -418,10 +415,7 @@ fn token_info_subcommand(
         }
         None => match api_token {
             Some(tok) => Some(tok),
-            None => match std::env::var_os("REROBOTS_API_TOKEN") {
-                Some(tok) => Some(tok.into_string().unwrap()),
-                None => None,
-            },
+            None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| tok.into_string().unwrap()),
         },
     };
     if api_token.is_none() {
