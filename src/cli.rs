@@ -121,7 +121,8 @@ fn search_subcommand(
 
 fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let be_quiet = matches.is_present("quiet");
-    let payload = match client::api_instances(api_token) {
+    let include_terminated = matches.is_present("include_terminated");
+    let payload = match client::api_instances(api_token, include_terminated) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
@@ -497,7 +498,10 @@ pub fn main() -> Result<(), CliError> {
                     .arg(Arg::with_name("quiet")
                          .short("q")
                          .long("quiet")
-                         .help("Only display instance IDs")))
+                         .help("Only display instance IDs"))
+                    .arg(Arg::with_name("include_terminated")
+                         .long("include-terminated")
+                         .help("Include instances that are TERMINATED")))
         .subcommand(SubCommand::with_name("info")
                     .about("Print summary about instance")
                     .arg(Arg::with_name("instance_id")

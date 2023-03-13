@@ -103,8 +103,12 @@ pub fn api_search(
 
 pub fn api_instances(
     token: Option<String>,
+    include_terminated: bool,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let url = format!("{}/instances", get_origin());
+    let mut url = format!("{}/instances", get_origin());
+    if include_terminated {
+        url += "?include_terminated";
+    }
 
     let mut sys = System::new("wclient");
     actix::SystemRunner::block_on(&mut sys, async {
@@ -135,7 +139,7 @@ fn select_instance<S: ToString>(
     match instance_id {
         Some(inid) => Ok(inid.to_string()),
         None => {
-            let payload = api_instances(token)?;
+            let payload = api_instances(token, false)?;
             let instances = payload["workspace_instances"].as_array().unwrap();
             if instances.is_empty() {
                 ClientError::newbox("no active instances")
