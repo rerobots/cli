@@ -22,7 +22,11 @@ use crate::client;
 
 
 // TODO: this should eventually be placed in a public key store
-const WEBUI_PUBLIC_KEY: &[u8] = include_bytes!("../keys/webui-public.pem");
+#[cfg(not(test))]
+const PUBLIC_KEY: &[u8] = include_bytes!("../keys/public.pem");
+
+#[cfg(test)]
+const PUBLIC_KEY: &[u8] = include_bytes!("../tests/keys/public.pem");
 
 
 #[derive(PartialEq)]
@@ -426,7 +430,7 @@ fn token_info_subcommand(
 
     let alg = PKeyWithDigest {
         digest: MessageDigest::sha256(),
-        key: PKey::public_key_from_pem(WEBUI_PUBLIC_KEY).unwrap(),
+        key: PKey::public_key_from_pem(PUBLIC_KEY).unwrap(),
     };
     let now = std::time::SystemTime::now();
     let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
