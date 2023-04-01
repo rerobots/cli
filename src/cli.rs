@@ -7,26 +7,10 @@ use std::io::prelude::*;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-use chrono::{TimeZone, Utc};
-
 use clap::{Arg, SubCommand};
 
-use openssl::hash::MessageDigest;
-use openssl::pkey::PKey;
-
-use jwt::algorithm::openssl::PKeyWithDigest;
-use jwt::VerifyWithKey;
-use jwt::{Claims, Header, Token};
-
 use crate::client;
-
-
-// TODO: this should eventually be placed in a public key store
-#[cfg(not(test))]
-const PUBLIC_KEY: &[u8] = include_bytes!("../keys/public.pem");
-
-#[cfg(test)]
-const PUBLIC_KEY: &[u8] = include_bytes!("../tests/keys/public.pem");
+use client::TokenClaims;
 
 
 #[derive(PartialEq)]
@@ -428,38 +412,15 @@ fn token_info_subcommand(
     }
     let api_token = api_token.unwrap();
 
-    let alg = PKeyWithDigest {
-        digest: MessageDigest::sha256(),
-        key: PKey::public_key_from_pem(PUBLIC_KEY).unwrap(),
+    let tc = match TokenClaims::new(&api_token) {
+        Ok(x) => x,
+        Err(err) => return CliError::new(err, 1),
     };
-    let now = std::time::SystemTime::now();
-    let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
-
-    let result: Result<Token<Header, Claims, _>, jwt::error::Error> =
-        api_token.verify_with_key(&alg);
-    let parsed_tok = match result {
-        Ok(tok) => tok,
-        Err(err) => match err {
-            jwt::error::Error::InvalidSignature => {
-                return CliError::new("Not a valid signature", 1)
-            }
-            _ => return CliError::new("Unknown error", 1),
-        },
-    };
-    let claims = parsed_tok.claims();
-    let subject = claims.registered.subject.as_ref().unwrap();
-    println!("subject: {}", subject);
-    match claims.registered.expiration {
-        Some(exp) => {
-            if exp < utime {
-                return CliError::new("Expired", 1);
-            } else {
-                println!("expiration: {:?}", Utc.timestamp(exp as i64, 0))
-            }
-        }
-        None => println!("never expires"),
-    };
-
+    println!("{}", tc);
+    if tc.is_expired() {
+        println!("warning: This token is expired.");
+        return CliError::newrc(1);
+    }
     Ok(())
 }
 

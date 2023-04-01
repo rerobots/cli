@@ -5,7 +5,23 @@ use std::collections::HashMap;
 
 use actix::prelude::*;
 
+use chrono::{TimeZone, Utc};
+
+use openssl::hash::MessageDigest;
+use openssl::pkey::PKey;
 use openssl::ssl::{SslConnector, SslMethod};
+
+use jwt::algorithm::openssl::PKeyWithDigest;
+use jwt::VerifyWithKey;
+use jwt::{Claims, Header, Token};
+
+
+// TODO: this should eventually be placed in a public key store
+#[cfg(not(test))]
+const PUBLIC_KEY: &[u8] = include_bytes!("../keys/public.pem");
+
+#[cfg(test)]
+const PUBLIC_KEY: &[u8] = include_bytes!("../tests/keys/public.pem");
 
 
 struct ClientError {
@@ -52,10 +68,66 @@ fn get_origin() -> String {
 }
 
 
+pub struct TokenClaims {
+    subject: String,
+    expiration: Option<u64>,
+}
+
+impl TokenClaims {
+    pub fn new(api_token: &str) -> Result<TokenClaims, &str> {
+        let alg = PKeyWithDigest {
+            digest: MessageDigest::sha256(),
+            key: PKey::public_key_from_pem(PUBLIC_KEY).unwrap(),
+        };
+
+        let result: Result<Token<Header, Claims, _>, jwt::error::Error> =
+            api_token.verify_with_key(&alg);
+        let parsed_tok = match result {
+            Ok(tok) => tok,
+            Err(err) => match err {
+                jwt::error::Error::InvalidSignature => return Err("not a valid signature"),
+                _ => return Err("unknown error"),
+            },
+        };
+        let claims = parsed_tok.claims();
+        let subject = claims.registered.subject.as_ref().unwrap();
+        let expiration = claims.registered.expiration;
+        Ok(TokenClaims {
+            subject: subject.to_string(),
+            expiration,
+        })
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match self.expiration {
+            Some(exp) => {
+                let now = std::time::SystemTime::now();
+                let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+                exp < utime
+            }
+            None => false,
+        }
+    }
+}
+
+impl std::fmt::Display for TokenClaims {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "subject: {}", self.subject)?;
+        match self.expiration {
+            Some(exp) => {
+                write!(f, "expiration: {}", Utc.timestamp(exp as i64, 0))
+            }
+            None => write!(f, "expiration: (never)"),
+        }
+    }
+}
+
+
 fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
         Some(tok) => Some(format!("Bearer {}", tok)),
-        None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
+        None => std::env::var_os("REROBOTS_API_TOKEN")
+            .map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
     };
 
     let connector = SslConnector::builder(SslMethod::tls())?.build();
