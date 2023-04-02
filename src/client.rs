@@ -414,6 +414,7 @@ mod tests {
     use mockito::mock;
 
     use super::api_search;
+    use super::TokenClaims;
 
     #[test]
     fn empty_search() {
@@ -470,5 +471,15 @@ mod tests {
         let wds = res["workspace_deployments"].as_array().unwrap();
         assert_eq!(wds.len(), 1);
         assert_eq!(wds[0], "82051afa-b331-4b82-8bd4-9eea9ad78241");
+    }
+
+
+    #[test]
+    fn detect_expired_token() {
+        const EXPIRED_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ0ZXN0X3VzZXIiLCJpc3MiOiJyZXJvYm90cy5uZXQiLCJhdWQiOiJyZXJvYm90cy5uZXQiLCJleHAiOjE2Nzk2ODQ0MjQsIm5iZiI6MTY3OTU5ODAyNH0.R9Z4Y5tVHJiPTGfEjUljIGmzor4SAmUmdXyuvQBF2oc6QVHFfxGD-QnVaDfyB6Q2WbBiMWsvDgsI2X56t_-Cd7tZio-VQLL-AEwu1uTnOnt3aXwYB211M7b5ZEFrNN5BNS00FqnMpOQ5DfWKzYUqzvVV4gbxdPhLD2PUpMvT6-F-9NgtR_Z5VEeR-rzRI1-A0KYP9tWHh8GeEPb4D449wtcp-a-Hy6GHOFGGJupSkiB1aJ0T-b1CPlEDN9uwgEq4N_2hHMXwYiyc5Qpo5PABAB_BhM0CP43ca2M9n67om9oQZHqnkon_RWJDSjNAGCn8aZGSfKv0E2pahXfqjhWn6Eakb_R4VDNFBIy6xAl1i0NT-YDdF8-4kLA0sxIoLnk812LvmoifsFsmuv1cdSAAccYdyMjwyQDNCMjFCSJSR6pwZhpfsaUB1frTXWaFteA8yGf8bkL59i3yWherji7yfRY-aepVSH2Hjw_bHxVIPq3mulrhW0XI8qk6uPS1CB5F4Thqqvf_G-qIx0HJWAzF6zTkoAjhOa-BUIuxGo2w17fxK2RhzoOfMZWSfQqifKdCxhuGNOTpyD7nsK9OQP9_S1krOLSvavWuPfTV5GN-NhmRSAcg8Qcv1UkGguZaAFlHlGOzlw4PI_9qGhIxPj7t-PjHyETdH4IrdilpQkXgZuw";
+        let tc = TokenClaims::new(EXPIRED_TOKEN).unwrap();
+        assert!(tc.is_expired());
+        assert_eq!(tc.subject, "test_user");
+        assert_eq!(tc.expiration.unwrap(), 1679684424);
     }
 }
