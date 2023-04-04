@@ -68,6 +68,7 @@ fn get_origin() -> String {
 }
 
 
+#[derive(Debug)]
 pub struct TokenClaims {
     subject: String,
     expiration: Option<u64>,
@@ -481,5 +482,10 @@ mod tests {
         assert!(tc.is_expired());
         assert_eq!(tc.subject, "test_user");
         assert_eq!(tc.expiration.unwrap(), 1679684424);
+
+        let mut tok = String::from(EXPIRED_TOKEN);
+        tok.push('F');
+        let error = TokenClaims::new(&tok).unwrap_err();
+        assert_eq!(error, "not a valid signature");
     }
 }
