@@ -72,6 +72,7 @@ fn get_origin() -> String {
 pub struct TokenClaims {
     subject: String,
     expiration: Option<u64>,
+    organization: Option<String>,
 }
 
 impl TokenClaims {
@@ -93,9 +94,15 @@ impl TokenClaims {
         let claims = parsed_tok.claims();
         let subject = claims.registered.subject.as_ref().unwrap();
         let expiration = claims.registered.expiration;
+        let organization = if claims.private.contains_key("org") {
+            Some(claims.private["org"].as_str().unwrap().into())
+        } else {
+            None
+        };
         Ok(TokenClaims {
             subject: subject.to_string(),
             expiration,
+            organization,
         })
     }
 
@@ -481,6 +488,7 @@ mod tests {
         let tc = TokenClaims::new(EXPIRED_TOKEN).unwrap();
         assert!(tc.is_expired());
         assert_eq!(tc.subject, "test_user");
+        assert_eq!(tc.organization, None);
         assert_eq!(tc.expiration.unwrap(), 1679684424);
 
         let mut tok = String::from(EXPIRED_TOKEN);
