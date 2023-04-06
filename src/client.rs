@@ -55,11 +55,9 @@ impl ClientError {
 
 #[cfg(not(test))]
 fn get_origin() -> String {
-    match option_env!("REROBOTS_ORIGIN") {
-        Some(u) => u,
-        None => "https://api.rerobots.net",
-    }
-    .to_string()
+    option_env!("REROBOTS_ORIGIN")
+        .unwrap_or("https://api.rerobots.net")
+        .to_string()
 }
 
 #[cfg(test)]
@@ -215,7 +213,7 @@ fn select_instance<S: ToString>(
     instance_id: Option<S>,
     token: &Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let token = token.as_ref().map(|s| s.clone());
+    let token = token.as_ref().cloned();
     match instance_id {
         Some(inid) => Ok(inid.to_string()),
         None => {
