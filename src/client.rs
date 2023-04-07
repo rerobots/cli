@@ -66,6 +66,7 @@ fn get_origin() -> String {
 }
 
 
+/// API token
 #[derive(Debug)]
 pub struct TokenClaims {
     subject: String,
