@@ -105,6 +105,8 @@ impl TokenClaims {
         })
     }
 
+    /// Is the expiration date of the API token in the past?
+    /// Compares to [`std::time::SystemTime::now()`].
     pub fn is_expired(&self) -> bool {
         match self.expiration {
             Some(exp) => {
