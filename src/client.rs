@@ -67,6 +67,8 @@ fn get_origin() -> String {
 
 
 /// API token
+///
+/// Manage yours at <https://rerobots.net/tokens>.
 #[derive(Debug)]
 pub struct TokenClaims {
     subject: String,
