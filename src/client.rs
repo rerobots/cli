@@ -78,6 +78,7 @@ pub struct TokenClaims {
 }
 
 impl TokenClaims {
+    /// Attempt to parse raw string as API token.
     pub fn new(api_token: &str) -> Result<TokenClaims, &str> {
         let alg = PKeyWithDigest {
             digest: MessageDigest::sha256(),
