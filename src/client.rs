@@ -72,9 +72,14 @@ fn get_origin() -> String {
 /// Learn more at <https://docs.rerobots.net/web/making-and-revoking-api-tokens>.
 #[derive(Debug)]
 pub struct TokenClaims {
-    subject: String,
-    expiration: Option<u64>,
-    organization: Option<String>,
+    /// username
+    pub subject: String,
+
+    /// organization scope, if any
+    pub organization: Option<String>,
+
+    /// date after which this token is not valid
+    pub expiration: Option<u64>,
 }
 
 impl TokenClaims {
