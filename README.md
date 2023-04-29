@@ -6,8 +6,7 @@ Summary
 
 command-line interface (CLI) for [rerobots](https://rerobots.net/)
 
-Documentation of the current release is at https://rerobots-cli.readthedocs.io/
-or can be built from sources as described below.
+Documentation of the current release is at https://docs.rerobots.net/tools/cli
 
 
 Getting Started
@@ -39,18 +38,6 @@ To check code style,
 
     cargo +nightly fmt -- --check
     cargo clippy --tests -- -D clippy::all
-
-Building the User's Guide requires [Sphinx](https://www.sphinx-doc.org/),
-which can be installed by
-
-    cd doc
-    pip install -r requirements.txt
-
-Now, in the doc/ directory,
-
-    make
-
-The result is in build/. Start reading at build/index.html
 
 
 Participating
