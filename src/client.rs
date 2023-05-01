@@ -131,6 +131,10 @@ impl TokenClaims {
 impl std::fmt::Display for TokenClaims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "subject: {}", self.subject)?;
+        match &self.organization {
+            Some(org) => writeln!(f, "organization: {}", org)?,
+            None => writeln!(f, "organization: (none)")?,
+        };
         match self.expiration {
             Some(exp) => {
                 write!(f, "expiration: {}", Utc.timestamp(exp as i64, 0))
