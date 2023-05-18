@@ -8,6 +8,9 @@ command-line interface (CLI) for [rerobots](https://rerobots.net/)
 
 Documentation of the current release is at https://docs.rerobots.net/tools/cli
 
+If you want to contribute to development, then read more below, and clone the
+repository at https://github.com/rerobots/cli
+
 
 Getting Started
 ---------------
