@@ -10,7 +10,7 @@ edition = "2018"
 include = [
     "/src",
     "/README.md",
-    "/keys/webui-public.pem",
+    "/keys/public.pem",
 ]
 
 [dependencies]
