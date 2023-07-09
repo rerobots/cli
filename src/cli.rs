@@ -1,4 +1,3 @@
-// SCL <scott@rerobots.net>
 // Copyright (C) 2021 rerobots, Inc.
 
 use std::fs::{File, OpenOptions};
