@@ -128,6 +128,7 @@ impl TokenClaims {
 }
 
 impl std::fmt::Display for TokenClaims {
+    /// Print token claims in a `KEY: VALUE` format.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "subject: {}", self.subject)?;
         match &self.organization {
