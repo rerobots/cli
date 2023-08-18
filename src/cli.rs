@@ -14,9 +14,9 @@ use client::TokenClaims;
 
 #[derive(PartialEq)]
 enum DefaultConfirmAnswer {
-    YES,
-    NO,
-    NONE,
+    Yes,
+    No,
+    None,
 }
 
 
@@ -77,7 +77,7 @@ impl CliError {
 
 #[derive(PartialEq, Debug)]
 enum PrintingFormat {
-    DEFAULT,
+    Default,
     YAML,
     JSON,
 }
@@ -169,8 +169,8 @@ fn get_sshkey_subcommand(
     let instance_id = matches.value_of("instance_id");
 
     let path = matches.value_of("secret_key_path").unwrap_or("key.pem");
-    if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::YES {
-        if default_confirm == DefaultConfirmAnswer::NO {
+    if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::Yes {
+        if default_confirm == DefaultConfirmAnswer::No {
             return CliError::new(format!("Error: {} already exists", path), 1);
         }
         let prompt = format!(
@@ -296,11 +296,11 @@ fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::er
 
 fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnswer {
     if matches.is_present("assume_no") {
-        DefaultConfirmAnswer::NO
+        DefaultConfirmAnswer::No
     } else if matches.is_present("assume_yes") {
-        DefaultConfirmAnswer::YES
+        DefaultConfirmAnswer::Yes
     } else {
-        DefaultConfirmAnswer::NONE
+        DefaultConfirmAnswer::None
     }
 }
 
@@ -542,7 +542,7 @@ pub fn main() -> Result<(), CliError> {
                 );
             }
         }
-        None => PrintingFormat::DEFAULT,
+        None => PrintingFormat::Default,
     };
 
     let api_token = match matches.value_of("apitoken") {
