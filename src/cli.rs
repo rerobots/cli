@@ -78,8 +78,8 @@ impl CliError {
 #[derive(PartialEq, Debug)]
 enum PrintingFormat {
     Default,
-    YAML,
-    JSON,
+    Yaml,
+    Json,
 }
 
 
@@ -151,10 +151,10 @@ fn info_subcommand(
         payload["id"].as_str().unwrap()
     )
     .into();
-    if pformat == PrintingFormat::YAML {
+    if pformat == PrintingFormat::Yaml {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
     } else {
-        // pformat == PrintingFormat::JSON
+        // pformat == PrintingFormat::Json
         println!("{}", serde_json::to_string_pretty(&payload).unwrap());
     }
     Ok(())
@@ -220,10 +220,10 @@ fn wdinfo_subcommand(
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
-    if pformat == PrintingFormat::YAML {
+    if pformat == PrintingFormat::Yaml {
         println!("{}", serde_yaml::to_string(&payload).unwrap());
     } else {
-        // pformat == PrintingFormat::JSON
+        // pformat == PrintingFormat::Json
         println!("{}", serde_json::to_string_pretty(&payload).unwrap());
     }
     Ok(())
@@ -532,9 +532,9 @@ pub fn main() -> Result<(), CliError> {
         Some(given_pformat) => {
             let given_pformat_lower = given_pformat.to_lowercase();
             if given_pformat_lower == "json" {
-                PrintingFormat::JSON
+                PrintingFormat::Json
             } else if given_pformat_lower == "yaml" {
-                PrintingFormat::YAML
+                PrintingFormat::Yaml
             } else {
                 return CliError::new(
                     format!("unrecognized format: {}", given_pformat).as_str(),
