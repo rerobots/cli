@@ -137,7 +137,11 @@ impl std::fmt::Display for TokenClaims {
         };
         match self.expiration {
             Some(exp) => {
-                write!(f, "expiration: {}", Utc.timestamp(exp as i64, 0))
+                write!(
+                    f,
+                    "expiration: {}",
+                    Utc.timestamp_opt(exp as i64, 0).unwrap()
+                )
             }
             None => write!(f, "expiration: (never)"),
         }
