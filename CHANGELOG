@@ -1,0 +1,9 @@
+rerobots CLI (0.11.2)
+
+  * Move documentation to https://docs.rerobots.net/tools/cli
+
+  * Include organization in token display and URL in instance info
+
+  * New option: `list --include-terminated`
+
+ -- Scott C. Livingston <scott@rerobots.net>  Sat, 02 Dec 2023 11:07:06 -0800
