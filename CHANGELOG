@@ -1,3 +1,10 @@
+rerobots CLI (0.11.3)
+
+  * Move library code to separate package (https://github.com/rerobots/rs)
+
+ -- Scott C. Livingston <scott@rerobots.net>  Tue, 20 Feb 2024 17:42:10 -0800
+
+
 rerobots CLI (0.11.2)
 
   * Move documentation to https://docs.rerobots.net/tools/cli
