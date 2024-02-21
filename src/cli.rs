@@ -20,8 +20,8 @@ use std::os::unix::fs::PermissionsExt;
 
 use clap::{Arg, SubCommand};
 
-use crate::client;
-use client::TokenClaims;
+use rerobots::client;
+use rerobots::client::TokenClaims;
 
 
 #[derive(PartialEq)]

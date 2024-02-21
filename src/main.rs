@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
 extern crate log;
 
 #[macro_use]
@@ -22,14 +21,10 @@ extern crate serde_json;
 extern crate serde_yaml;
 
 mod cli;
-mod client;
 
 
 fn main() {
-    #[cfg(unix)]
-    {
-        openssl_probe::init_ssl_cert_env_vars();
-    }
+    rerobots::init();
     match cli::main() {
         Ok(_) => std::process::exit(0),
         Err(err) => {
