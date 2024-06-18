@@ -1,0 +1,15 @@
+---
+# configuration for GitHub Actions
+name: rerobots CLI tests
+on:
+    push:
+    pull_request:
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v4
+            - name: Run tests
+              run: |
+                cargo test
