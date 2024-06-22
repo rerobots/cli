@@ -38,6 +38,9 @@ To check code style,
     cargo +nightly fmt -- --check
     cargo clippy --tests -- -D clippy::all
 
+Current [CI report](https://github.com/rerobots/cli/actions/workflows/main.yml):
+![build status from GitHub Actions](https://github.com/rerobots/cli/actions/workflows/main.yml/badge.svg)
+
 
 Participating
 -------------
