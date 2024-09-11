@@ -14,7 +14,6 @@
 
 use assert_cmd::Command;
 
-
 #[test]
 fn prints_version() {
     let mut cmd = Command::cargo_bin("rerobots").unwrap();
@@ -23,7 +22,6 @@ fn prints_version() {
         .stdout(format!("{}\n", env!("CARGO_PKG_VERSION")))
         .success();
 }
-
 
 #[test]
 fn prints_help() {
@@ -47,7 +45,6 @@ fn prints_help() {
     assert.success();
     insta::assert_snapshot!("prints_help", String::from_utf8(output.stdout).unwrap());
 }
-
 
 #[test]
 fn prints_help_search() {
@@ -80,7 +77,6 @@ fn prints_help_search() {
         String::from_utf8(output.stdout).unwrap()
     );
 }
-
 
 #[test]
 fn prints_help_launch() {

@@ -22,7 +22,6 @@ extern crate serde_yaml;
 
 mod cli;
 
-
 fn main() {
     rerobots::init();
     match cli::main() {

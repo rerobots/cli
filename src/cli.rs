@@ -23,14 +23,12 @@ use clap::{Arg, SubCommand};
 use rerobots::client;
 use rerobots::client::TokenClaims;
 
-
 #[derive(PartialEq)]
 enum DefaultConfirmAnswer {
     Yes,
     No,
     None,
 }
-
 
 pub struct CliError {
     pub msg: Option<String>,
@@ -86,14 +84,12 @@ impl CliError {
     }
 }
 
-
 #[derive(PartialEq, Debug)]
 enum PrintingFormat {
     Default,
     Yaml,
     Json,
 }
-
 
 fn search_subcommand(
     matches: &clap::ArgMatches,
@@ -116,7 +112,6 @@ fn search_subcommand(
     }
     Ok(())
 }
-
 
 fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let be_quiet = matches.is_present("quiet");
@@ -147,7 +142,6 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
     Ok(())
 }
 
-
 fn info_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
@@ -171,7 +165,6 @@ fn info_subcommand(
     }
     Ok(())
 }
-
 
 fn get_sshkey_subcommand(
     matches: &clap::ArgMatches,
@@ -221,7 +214,6 @@ fn get_sshkey_subcommand(
     }
 }
 
-
 fn wdinfo_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
@@ -241,7 +233,6 @@ fn wdinfo_subcommand(
     Ok(())
 }
 
-
 fn terminate_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
@@ -252,7 +243,6 @@ fn terminate_subcommand(
         Err(err) => CliError::new_std(err, 1),
     }
 }
-
 
 fn isready_subcommand(
     matches: &clap::ArgMatches,
@@ -278,7 +268,6 @@ fn isready_subcommand(
     }
 }
 
-
 #[cfg(unix)]
 fn user_only_perm(fp: &mut File) -> Result<(), Box<dyn std::error::Error>> {
     let mut perm = fp.metadata()?.permissions();
@@ -292,7 +281,6 @@ fn user_only_perm(fp: &mut File) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut fp = OpenOptions::new()
         .create(true)
@@ -305,7 +293,6 @@ fn write_secret_key(fname: &str, secret_key: &str) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
-
 fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnswer {
     if matches.is_present("assume_no") {
         DefaultConfirmAnswer::No
@@ -315,7 +302,6 @@ fn decide_default_confirmation(matches: &clap::ArgMatches) -> DefaultConfirmAnsw
         DefaultConfirmAnswer::None
     }
 }
-
 
 fn launch_subcommand(
     matches: &clap::ArgMatches,
@@ -343,7 +329,6 @@ fn launch_subcommand(
     println!("{}", payload["id"].as_str().unwrap());
     Ok(())
 }
-
 
 fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let secret_key_path = "key.pem";
@@ -398,7 +383,6 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
     }
 }
 
-
 fn token_info_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
@@ -434,7 +418,6 @@ fn token_info_subcommand(
     }
     Ok(())
 }
-
 
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client").max_term_width(80)
