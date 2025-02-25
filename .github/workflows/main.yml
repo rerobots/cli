@@ -7,12 +7,20 @@ on:
 jobs:
     build:
         name: Build
-        runs-on: ubuntu-22.04
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [
+                    ubuntu-22.04,
+                    macos-latest,
+                    windows-latest,
+                ]
         steps:
             - uses: actions/checkout@v4
             - run: rustup toolchain install stable --profile minimal
             - uses: Swatinem/rust-cache@v2
             - name: Lint
+              if: runner.os != 'Windows'
               run: |
                 cargo fmt --check
                 cargo check
