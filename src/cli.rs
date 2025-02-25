@@ -421,6 +421,7 @@ fn token_info_subcommand(
 
 pub fn main() -> Result<(), CliError> {
     let app = clap::App::new("rerobots API command-line client").max_term_width(80)
+        .bin_name("rerobots")
         .subcommand(SubCommand::with_name("version")
                     .about("Prints version number and exits"))
         .arg(Arg::with_name("version")
