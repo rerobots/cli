@@ -6,7 +6,7 @@ repository = "https://github.com/rerobots/cli"
 license = "Apache-2.0"
 version = "0.11.4-devel"
 authors = ["rerobots, Inc. <q@rerobots.net>"]
-edition = "2018"
+edition = "2021"
 include = [
     "/src",
     "/README.md",
