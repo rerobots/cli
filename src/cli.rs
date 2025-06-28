@@ -39,7 +39,7 @@ impl std::error::Error for CliError {}
 impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.msg {
-            Some(m) => write!(f, "{}", m),
+            Some(m) => write!(f, "{m}"),
             None => write!(f, ""),
         }
     }
@@ -48,7 +48,7 @@ impl std::fmt::Display for CliError {
 impl std::fmt::Debug for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.msg {
-            Some(m) => write!(f, "{}", m),
+            Some(m) => write!(f, "{m}"),
             None => write!(f, ""),
         }
     }
@@ -64,14 +64,14 @@ impl CliError {
 
     fn new_std(err: Box<dyn std::error::Error>, exitcode: i32) -> Result<(), CliError> {
         Err(CliError {
-            msg: Some(format!("{}", err)),
+            msg: Some(format!("{err}")),
             exitcode,
         })
     }
 
     fn new_stdio(err: std::io::Error, exitcode: i32) -> Result<(), CliError> {
         Err(CliError {
-            msg: Some(format!("{}", err)),
+            msg: Some(format!("{err}")),
             exitcode,
         })
     }
@@ -108,7 +108,7 @@ fn search_subcommand(
     for wd in payload["workspace_deployments"].as_array().unwrap().iter() {
         let wd = wd.as_str().unwrap();
         let wtype = payload["info"][wd]["type"].as_str().unwrap();
-        println!("{}    {}", wd, wtype);
+        println!("{wd}    {wtype}");
     }
     Ok(())
 }
@@ -131,12 +131,12 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
     {
         let inst = inst.as_str().unwrap();
         if be_quiet {
-            println!("{}", inst);
+            println!("{inst}");
         } else {
             let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j]
                 .as_str()
                 .unwrap();
-            println!("{}\t{}", inst, wdeployment_id);
+            println!("{inst}\t{wdeployment_id}");
         }
     }
     Ok(())
@@ -176,14 +176,11 @@ fn get_sshkey_subcommand(
     let path = matches.value_of("secret_key_path").unwrap_or("key.pem");
     if std::path::Path::new(path).exists() && default_confirm != DefaultConfirmAnswer::Yes {
         if default_confirm == DefaultConfirmAnswer::No {
-            return CliError::new(format!("Error: {} already exists", path), 1);
+            return CliError::new(format!("Error: {path} already exists"), 1);
         }
-        let prompt = format!(
-            "Overwrite existing file at {} with new secret key? [y/N]",
-            path
-        );
+        let prompt = format!("Overwrite existing file at {path} with new secret key? [y/N]");
         loop {
-            print!("{} ", prompt);
+            print!("{prompt} ");
             std::io::stdout().flush().unwrap();
             let mut choice = String::new();
             match std::io::stdin().read_line(&mut choice) {
@@ -312,7 +309,7 @@ fn launch_subcommand(
     let public_key = match matches.value_of("public_key") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
-                return CliError::new(format!("Error: {} does not exist", fname), 1);
+                return CliError::new(format!("Error: {fname} does not exist"), 1);
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
@@ -368,7 +365,7 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
     let status = match cmd
         .arg("-p")
         .arg(port.to_string())
-        .arg(format!("{}@{}", username, ipv4))
+        .arg(format!("{username}@{ipv4}"))
         .stdin(std::process::Stdio::inherit())
         .stdout(std::process::Stdio::inherit())
         .status()
@@ -390,7 +387,7 @@ fn token_info_subcommand(
     let api_token = match matches.value_of("token_file") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
-                return CliError::new(format!("Error: {} does not exist", fname), 1);
+                return CliError::new(format!("Error: {fname} does not exist"), 1);
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
@@ -411,7 +408,7 @@ fn token_info_subcommand(
         Ok(x) => x,
         Err(err) => return CliError::new(err, 1),
     };
-    println!("{}", tc);
+    println!("{tc}");
     if tc.is_expired() {
         println!("warning: This token is expired.");
         return CliError::newrc(1);
@@ -532,10 +529,7 @@ pub fn main() -> Result<(), CliError> {
             } else if given_pformat_lower == "yaml" {
                 PrintingFormat::Yaml
             } else {
-                return CliError::new(
-                    format!("unrecognized format: {}", given_pformat).as_str(),
-                    1,
-                );
+                return CliError::new(format!("unrecognized format: {given_pformat}").as_str(), 1);
             }
         }
         None => PrintingFormat::Default,
@@ -544,7 +538,7 @@ pub fn main() -> Result<(), CliError> {
     let api_token = match matches.value_of("apitoken") {
         Some(fname) => {
             if !std::path::Path::new(fname).exists() {
-                return CliError::new(format!("Error: {} does not exist", fname), 1);
+                return CliError::new(format!("Error: {fname} does not exist"), 1);
             }
             match std::fs::read_to_string(fname) {
                 Ok(s) => Some(s.trim().to_string()),
