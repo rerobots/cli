@@ -1,7 +1,7 @@
 [package]
 name = "rerobots-cli"
 description = "command-line interface (CLI) for rerobots"
-homepage = "https://github.com/rerobots/cli"
+homepage = "https://docs.rerobots.net/tools/cli"
 repository = "https://github.com/rerobots/cli"
 license = "Apache-2.0"
 version = "0.11.4-devel"
