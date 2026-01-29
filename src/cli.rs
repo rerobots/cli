@@ -54,6 +54,15 @@ impl std::fmt::Debug for CliError {
     }
 }
 
+impl From<&str> for CliError {
+    fn from(value: &str) -> Self {
+        CliError {
+            msg: Some(value.into()),
+            exitcode: 1,
+        }
+    }
+}
+
 impl CliError {
     fn new<S: ToString>(msg: S, exitcode: i32) -> Result<(), CliError> {
         Err(CliError {
@@ -105,9 +114,17 @@ fn search_subcommand(
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
-    for wd in payload["workspace_deployments"].as_array().unwrap().iter() {
-        let wd = wd.as_str().unwrap();
-        let wtype = payload["info"][wd]["type"].as_str().unwrap();
+    for wd in payload["workspace_deployments"]
+        .as_array()
+        .expect("workspace_deployments should be array")
+        .iter()
+    {
+        let wd = wd
+            .as_str()
+            .expect("Elements of workspace_deployments should be strings");
+        let wtype = payload["info"][wd]["type"]
+            .as_str()
+            .expect("info.wd.type should be string");
         println!("{wd}    {wtype}");
     }
     Ok(())
@@ -125,17 +142,21 @@ fn list_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Res
     }
     for (j, inst) in payload["workspace_instances"]
         .as_array()
-        .unwrap()
+        .expect("workspace_instances should be array")
         .iter()
         .enumerate()
     {
-        let inst = inst.as_str().unwrap();
+        let inst = inst
+            .as_str()
+            .expect("Elements of workspace_instances should be strings");
         if be_quiet {
             println!("{inst}");
         } else {
-            let wdeployment_id = &payload["workspace_deployments"].as_array().unwrap()[j]
+            let wdeployment_id = &payload["workspace_deployments"]
+                .as_array()
+                .expect("workspace_deployments should be array")[j]
                 .as_str()
-                .unwrap();
+                .expect("Elements of workspace_deployments should be strings");
             println!("{inst}\t{wdeployment_id}");
         }
     }
@@ -154,14 +175,21 @@ fn info_subcommand(
     };
     payload["url"] = format!(
         "https://rerobots.net/instance/{}",
-        payload["id"].as_str().unwrap()
+        payload["id"].as_str().expect("id should be string")
     )
     .into();
     if pformat == PrintingFormat::Yaml {
-        println!("{}", serde_yaml::to_string(&payload).unwrap());
+        println!(
+            "{}",
+            serde_yaml::to_string(&payload).expect("Instance info can be serialized to YAML")
+        );
     } else {
         // pformat == PrintingFormat::Json
-        println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&payload)
+                .expect("Instance info can be serialized to JSON")
+        );
     }
     Ok(())
 }
@@ -181,7 +209,9 @@ fn get_sshkey_subcommand(
         let prompt = format!("Overwrite existing file at {path} with new secret key? [y/N]");
         loop {
             print!("{prompt} ");
-            std::io::stdout().flush().unwrap();
+            std::io::stdout()
+                .flush()
+                .expect("Flush of stdout should succeed");
             let mut choice = String::new();
             match std::io::stdin().read_line(&mut choice) {
                 Ok(_) => {
@@ -216,16 +246,25 @@ fn wdinfo_subcommand(
     api_token: Option<String>,
     pformat: PrintingFormat,
 ) -> Result<(), CliError> {
-    let wdeployment_id = matches.value_of("wdeployment_id").unwrap();
+    let wdeployment_id = matches
+        .value_of("wdeployment_id")
+        .ok_or("ID argument is required")?;
     let payload = match client::api_wdeployment_info(wdeployment_id, api_token) {
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
     if pformat == PrintingFormat::Yaml {
-        println!("{}", serde_yaml::to_string(&payload).unwrap());
+        println!(
+            "{}",
+            serde_yaml::to_string(&payload).expect("Deployment info can be serialized to YAML")
+        );
     } else {
         // pformat == PrintingFormat::Json
-        println!("{}", serde_json::to_string_pretty(&payload).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&payload)
+                .expect("Deployment info can be serialized to JSON")
+        );
     }
     Ok(())
 }
@@ -252,14 +291,21 @@ fn isready_subcommand(
             Ok(p) => p,
             Err(err) => return CliError::new_std(err, 1),
         };
-        let status = payload["status"].as_str().unwrap();
+        let status = payload["status"]
+            .as_str()
+            .expect("Instance status should be string");
         if status == "READY" {
             return Ok(());
         } else if status != "INIT" || !blocking {
             return CliError::newrc(1);
         }
         if instance_id.is_none() {
-            instance_id = Some(payload["id"].as_str().unwrap().to_string());
+            instance_id = Some(
+                payload["id"]
+                    .as_str()
+                    .expect("Instance id should be string")
+                    .to_string(),
+            );
         }
         std::thread::sleep(std::time::Duration::new(1, 0));
     }
@@ -304,7 +350,9 @@ fn launch_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
 ) -> Result<(), CliError> {
-    let wdid_or_wtype = matches.value_of("wdid_or_wtype").unwrap();
+    let wdid_or_wtype = matches
+        .value_of("wdid_or_wtype")
+        .ok_or("ID or type argument is required")?;
 
     let public_key = match matches.value_of("public_key") {
         Some(fname) => {
@@ -323,7 +371,12 @@ fn launch_subcommand(
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
-    println!("{}", payload["id"].as_str().unwrap());
+    println!(
+        "{}",
+        payload["id"]
+            .as_str()
+            .expect("New instance ID should be string")
+    );
     Ok(())
 }
 
@@ -334,17 +387,18 @@ fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Resu
         Ok(p) => p,
         Err(err) => return CliError::new_std(err, 1),
     };
-    let status = payload["status"].as_str().unwrap();
+    let status = payload["status"]
+        .as_str()
+        .expect("Instance status should be string");
     if status != "READY" {
         return CliError::new("Error: instance is not READY", 1);
     }
     let username = "root";
-    let ipv4 = payload["fwd"].as_object().unwrap()["ipv4"]
-        .as_str()
-        .unwrap();
-    let port = payload["fwd"].as_object().unwrap()["port"]
-        .as_u64()
-        .unwrap();
+    let fwd = payload["fwd"]
+        .as_object()
+        .expect("In response, fwd should be JSON object");
+    let ipv4 = fwd["ipv4"].as_str().expect("ipv4 should be string");
+    let port = fwd["port"].as_u64().expect("port should be integer");
     let args: Vec<&str> = match matches.values_of("ssh_args") {
         Some(v) => v.collect(),
         None => vec![],
@@ -396,13 +450,18 @@ fn token_info_subcommand(
         }
         None => match api_token {
             Some(tok) => Some(tok),
-            None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| tok.into_string().unwrap()),
+            None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| {
+                tok.into_string()
+                    .expect("REROBOTS_API_TOKEN variable should be valid string")
+            }),
         },
     };
-    if api_token.is_none() {
-        return CliError::new("No API token given", 1);
-    }
-    let api_token = api_token.unwrap();
+    let api_token = match api_token {
+        Some(a) => a,
+        None => {
+            return CliError::new("No API token given", 1);
+        }
+    };
 
     let tc = match TokenClaims::new(&api_token) {
         Ok(x) => x,
