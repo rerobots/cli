@@ -35,6 +35,7 @@ SUBCOMMANDS:
     launch         Launch instance from specified workspace deployment or
                    type
     list           List all instances by this user
+    login          Login to rerobots.net
     search         Search for matching deployments. empty query implies show
                    all existing workspace deployments
     ssh            Connect to instance host via ssh
@@ -42,4 +43,3 @@ SUBCOMMANDS:
     token          Get information about an API token
     version        Prints version number and exits
     wdinfo         Print summary about workspace deployment
-
