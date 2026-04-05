@@ -1427,9 +1427,9 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
 name = "rerobots"
-version = "0.12.3"
+version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5671c59b8d8ab606e06a3f016c3f0b06d8d490d812033ab103a9d679ae7ebca3"
+checksum = "186d04b6ac1ccb2636ea2f528c8f55762edcacff4103cf1a71ab83dd0ef22c73"
 dependencies = [
  "actix",
  "awc",
