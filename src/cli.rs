@@ -384,6 +384,13 @@ fn login_subcommand() -> Result<(), CliError> {
     Ok(())
 }
 
+fn platformio_subcommand(
+    matches: &clap::ArgMatches,
+    api_token: Option<String>,
+) -> Result<(), CliError> {
+    Ok(())
+}
+
 fn ssh_subcommand(matches: &clap::ArgMatches, api_token: Option<String>) -> Result<(), CliError> {
     let secret_key_path = "key.pem";
     let instance_id = matches.value_of("instance_id");
@@ -551,6 +558,10 @@ pub fn main() -> Result<(), CliError> {
                          .help("path of public key to use; if not given, then a new key pair will be generated")))
         .subcommand(SubCommand::with_name("login")
                     .about("Login to rerobots.net"))
+        .subcommand(SubCommand::with_name("platformio")
+                    .about("Create PlatformIO proxy to remote devices")
+                    .arg(Arg::with_name("instance_id")
+                         .value_name("ID")))
         .subcommand(SubCommand::with_name("terminate")
                     .about("Terminate instance")
                     .arg(Arg::with_name("instance_id")
@@ -631,6 +642,8 @@ pub fn main() -> Result<(), CliError> {
         return launch_subcommand(matches, api_token);
     } else if matches.subcommand_matches("login").is_some() {
         return login_subcommand();
+    } else if let Some(matches) = matches.subcommand_matches("platformio") {
+        return platformio_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("terminate") {
         return terminate_subcommand(matches, api_token);
     } else if let Some(matches) = matches.subcommand_matches("isready") {

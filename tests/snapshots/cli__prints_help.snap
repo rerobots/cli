@@ -36,6 +36,7 @@ SUBCOMMANDS:
                    type
     list           List all instances by this user
     login          Login to rerobots.net
+    platformio     Create PlatformIO proxy to remote devices
     search         Search for matching deployments. empty query implies show
                    all existing workspace deployments
     ssh            Connect to instance host via ssh
