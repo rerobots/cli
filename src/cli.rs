@@ -388,6 +388,11 @@ fn platformio_subcommand(
     matches: &clap::ArgMatches,
     api_token: Option<String>,
 ) -> Result<(), CliError> {
+    let instance_id = matches.value_of("instance_id");
+    let payload = match client::api_instance_info(instance_id, api_token) {
+        Ok(p) => p,
+        Err(err) => return CliError::new_std(err, 1),
+    };
     Ok(())
 }
 
